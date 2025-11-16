@@ -1,11 +1,10 @@
-
 const CACHE_NAME = 'coremaster-fitness-cache-v2';
 const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/manifest.json',
-  '/logo.svg',
+  './',
+  './index.html',
+  './index.tsx',
+  './manifest.json',
+  './logo.svg',
   'https://cdn.tailwindcss.com'
 ];
 
