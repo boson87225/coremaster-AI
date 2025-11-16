@@ -62,7 +62,6 @@ const AppContent: React.FC = () => {
     }
 
     try {
-      // FIX: Move config parsing inside the try-catch block to prevent app crash on invalid JSON.
       const firebaseConfig = isRealConfigProvided ? JSON.parse(__firebase_config!) : DUMMY_FIREBASE_CONFIG;
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);

@@ -11,12 +11,19 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
-// The API key is expected to be set in the environment variables.
-if (!process.env.API_KEY) {
-  console.warn("API_KEY environment variable not set for Gemini API.");
-}
+let ai: GoogleGenAI | null = null;
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+// Lazy-initialize the Gemini client to prevent app crash on startup if API key is missing.
+const getAiClient = (): GoogleGenAI => {
+  if (!ai) {
+    if (!process.env.API_KEY) {
+      throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable to use AI features.");
+    }
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return ai;
+};
+
 
 // Convert our app's message format to the format required by the Gemini API
 const buildGeminiHistory = (messages: ChatMessage[]) => {
@@ -27,7 +34,8 @@ const buildGeminiHistory = (messages: ChatMessage[]) => {
 };
 
 export const getAiCoachResponseStream = async (history: ChatMessage[], message: string) => {
-  const chat: Chat = ai.chats.create({
+  const client = getAiClient();
+  const chat: Chat = client.chats.create({
     model: 'gemini-2.5-flash',
     history: buildGeminiHistory(history),
     config: {
@@ -40,9 +48,10 @@ export const getAiCoachResponseStream = async (history: ChatMessage[], message: 
 };
 
 export const getAiWorkoutPlan = async (goal: string, days: number, experience: string): Promise<WorkoutPlan> => {
+  const client = getAiClient();
   const prompt = `Generate a ${days}-day workout plan for a user with the goal of '${goal}' and an experience level of '${experience}'.`;
   
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
@@ -64,7 +73,8 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
 };
 
 export const getCompetitionPrepStream = async (history: ChatMessage[], message: string) => {
-  const chat: Chat = ai.chats.create({
+  const client = getAiClient();
+  const chat: Chat = client.chats.create({
     model: 'gemini-2.5-flash',
     history: buildGeminiHistory(history),
     config: {
@@ -77,9 +87,10 @@ export const getCompetitionPrepStream = async (history: ChatMessage[], message: 
 };
 
 export const getAiNutritionPlan = async (goal: string, tdee: number, workoutPlan: WorkoutPlan): Promise<NutritionPlan> => {
+  const client = getAiClient();
   const prompt = `My TDEE is ${tdee} calories, my goal is '${goal}', and here is my workout plan for today: ${JSON.stringify(workoutPlan, null, 2)}`;
   
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
@@ -101,6 +112,7 @@ export const getAiNutritionPlan = async (goal: string, tdee: number, workoutPlan
 
 
 export const recognizeFoodInImage = async (base64Image: string): Promise<RecognizedFood[]> => {
+    const client = getAiClient();
     const prompt = `Analyze the food items in this image. Estimate the nutrition facts for each item (calories, protein, carbohydrates, and fat). Provide your answer as a JSON object containing a single key "foods", which is an array of objects. Each object should have "name" (string), "calories" (number), "protein" (number, in grams), "carbs" (number, in grams), and "fat" (number, in grams). If you cannot identify any food, return an empty array.`;
 
     const imagePart = {
@@ -114,7 +126,7 @@ export const recognizeFoodInImage = async (base64Image: string): Promise<Recogni
         text: prompt,
     };
 
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: { parts: [textPart, imagePart] },
         config: {
@@ -152,9 +164,10 @@ export const recognizeFoodInImage = async (base64Image: string): Promise<Recogni
 };
 
 export const getAiInsightTip = async (data: object): Promise<string> => {
+  const client = getAiClient();
   const prompt = `Here is the user's current status. Please provide a short, actionable tip based on this information:\n${JSON.stringify(data, null, 2)}`;
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
