@@ -1,11 +1,18 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 
-if (!process.env.API_KEY) {
-  console.warn("API_KEY environment variable not set for Gemini API.");
-}
+// Lazy initialization to prevent app crash if API key is missing.
+let ai: GoogleGenAI | null = null;
+const getAiClient = (): GoogleGenAI => {
+  if (!ai) {
+    if (!process.env.API_KEY) {
+      console.error("API_KEY environment variable not set for Gemini API.");
+      throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable to use AI features.");
+    }
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return ai;
+};
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 /**
  * Converts text to speech using the Gemini API.
@@ -15,7 +22,8 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 export const textToSpeech = async (text: string): Promise<string | null> => {
   if (!text) return null;
   try {
-    const response = await ai.models.generateContent({
+    const client = getAiClient(); // Use the lazy-initialized client
+    const response = await client.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: `請用充滿活力的語氣說: ${text}` }] }],
       config: {
