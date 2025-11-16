@@ -1,4 +1,3 @@
-
 export const translations: { [key: string]: { en: string; zh: string } } = {
   // Global & Common
   INITIALIZING: { en: 'Initializing your connection...', zh: '正在初始化您的連線...' },
@@ -31,6 +30,7 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   AI_INSIGHT_TITLE: { en: "CoreMaster's Tip", zh: 'CoreMaster 每日提示' },
   AI_INSIGHT_LOADING: { en: 'Generating your personalized tip...', zh: '正在為您產生個人化提示...' },
   AI_INSIGHT_ERROR: { en: 'Could not generate a tip right now. Please try again.', zh: '目前無法產生提示，請再試一次。' },
+  AI_INSIGHT_ERROR_NO_KEY: { en: 'AI features disabled. API key not configured.', zh: 'AI 功能已停用。API 金鑰未設定。' },
   WEEKLY_ACTIVITY_TITLE: { en: 'Weekly Activity', zh: '本週活動' },
   DAY_SHORT: { en: 'Day {day}', zh: '第 {day} 天' },
   REST_DAY_SHORT: { en: 'Rest', zh: '休息' },

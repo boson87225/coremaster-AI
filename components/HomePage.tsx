@@ -1,4 +1,3 @@
-
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { PlanContext } from '../context/PlanContext';
 import { getAiInsightTip } from '../services/geminiService';
@@ -14,6 +13,11 @@ const AiInsight: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     const generateTip = useCallback(async () => {
+        if (!process.env.API_KEY) {
+            setError(t('AI_INSIGHT_ERROR_NO_KEY'));
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         setError(null);
         try {
