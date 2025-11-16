@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useRef, useCallback, useEffect } from 'react';
 import type { WorkoutPlan, WorkoutContextType, WorkoutState } from '../types';
 import { textToSpeech } from '../services/ttsService';
@@ -32,33 +31,55 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { t } = useTranslation();
 
+  // Lazily initialize and get the AudioContext
+  const getAudioContext = () => {
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+          try {
+              audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+          } catch (e) {
+              console.error("Could not create AudioContext:", e);
+              return null;
+          }
+      }
+      return audioContextRef.current;
+  };
+
+  // Effect to clean up the AudioContext when the provider unmounts
   useEffect(() => {
-    // Initialize AudioContext on the client side
-    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     return () => {
-      audioContextRef.current?.close();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
     };
   }, []);
   
   const speak = useCallback(async (text: string) => {
-    if (!audioContextRef.current) return;
-    if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
+    const context = getAudioContext();
+    if (!context) return;
+    
+    if (context.state === 'suspended') {
+        try {
+            await context.resume();
+        } catch (e) {
+            console.error("Could not resume AudioContext:", e);
+            return;
+        }
     }
+
     const base64Audio = await textToSpeech(text);
-    if (base64Audio && audioContextRef.current) {
+    if (base64Audio) {
         try {
             const audioBuffer = await decodeAudioData(
                 decode(base64Audio),
-                audioContextRef.current,
+                context,
                 24000, 
                 1
             );
-            const source = audioContextRef.current.createBufferSource();
+            const source = context.createBufferSource();
             source.buffer = audioBuffer;
-            source.connect(audioContextRef.current.destination);
+            source.connect(context.destination);
             
-            const now = audioContextRef.current.currentTime;
+            const now = context.currentTime;
             const startTime = Math.max(now, nextStartTimeRef.current);
             source.start(startTime);
             nextStartTimeRef.current = startTime + audioBuffer.duration;
