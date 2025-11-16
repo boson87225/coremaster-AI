@@ -42,7 +42,6 @@ const DUMMY_FIREBASE_CONFIG = {
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const isRealConfigProvided = typeof __firebase_config !== 'undefined' && __firebase_config;
-const firebaseConfig = isRealConfigProvided ? JSON.parse(__firebase_config) : DUMMY_FIREBASE_CONFIG;
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
 
@@ -64,7 +63,8 @@ const AppContent: React.FC = () => {
     }
 
     try {
-      // FIX: Use the modular initializeApp function consistently. This was the cause of the blank page error.
+      // FIX: Move config parsing inside the try-catch block to prevent app crash on invalid JSON.
+      const firebaseConfig = isRealConfigProvided ? JSON.parse(__firebase_config!) : DUMMY_FIREBASE_CONFIG;
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       
