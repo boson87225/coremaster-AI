@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 
@@ -16,10 +16,14 @@ import type { Page } from './types';
 // New imports for Workout Player
 import { WorkoutProvider } from './context/WorkoutContext';
 import { WorkoutPlayer } from './components/WorkoutPlayer';
-import { PlanProvider } from './context/PlanContext';
+import { PlanProvider, PlanContext } from './context/PlanContext';
 
 // New import for i18n
 import { LanguageProvider, useTranslation } from './context/LanguageContext';
+
+// New imports for Splash and Registration
+import { SplashScreen } from './components/SplashScreen';
+import { RegistrationPage } from './components/RegistrationPage';
 
 // Declare global variables for TypeScript to recognize them from the environment
 declare global {
@@ -45,15 +49,22 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 
 
 const AppContent: React.FC = () => {
-  const [page, setPage] = useState<Page>('home'); // Default to Home
+  const [page, setPage] = useState<Page>('home');
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const { t } = useTranslation();
+  
+  // New state for splash and registration flow
+  const [showSplash, setShowSplash] = useState(true);
+  const { userProfile, isLoaded } = useContext(PlanContext);
 
   useEffect(() => {
-    // If a real Firebase config is not provided, we'll mock the authentication
-    // to allow the app to run in a demo/development environment.
+    const splashTimer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(splashTimer);
+  }, []);
+  
+  useEffect(() => {
     if (!isRealConfigProvided) {
       console.warn("Firebase configuration not found. Using mock user for development.");
       setUserId(`dev-user-${crypto.randomUUID().substring(0, 8)}`);
@@ -94,25 +105,6 @@ const AppContent: React.FC = () => {
   }, []);
 
   const renderPage = useCallback(() => {
-    if (!isAuthReady) {
-      return (
-        <div className="flex flex-col justify-center items-center h-64 text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
-          <p className="mt-4 text-lg text-slate-300">{t('INITIALIZING')}</p>
-        </div>
-      );
-    }
-
-    if (authError) {
-      return (
-        <div className="p-4 bg-red-900/50 text-red-300 border-l-4 border-red-500 rounded-r-lg max-w-xl mx-auto">
-          <h2 className="font-bold text-lg">{t('APP_ERROR')}</h2>
-          <p>{authError}</p>
-          <p className="mt-2 text-sm text-slate-400">App ID: {appId}</p>
-        </div>
-      );
-    }
-
     switch (page) {
       case 'home': return <HomePage setPage={setPage} />;
       case 'my_plan': return <MyPlanPage setPage={setPage} />;
@@ -124,7 +116,7 @@ const AppContent: React.FC = () => {
       case 'settings': return <SettingsPage userId={userId} setPage={setPage} />;
       default: return <div className="text-center p-4">{t('PAGE_NOT_FOUND')}</div>;
     }
-  }, [page, isAuthReady, userId, authError, t]);
+  }, [page, userId, t]);
 
   const NavButton: React.FC<{targetPage: Page, label: string, icon: React.ReactNode, activeColor: string}> = ({targetPage, label, icon, activeColor}) => (
      <button 
@@ -135,6 +127,33 @@ const AppContent: React.FC = () => {
         <span className="text-xs mt-1">{label}</span>
       </button>
   );
+
+  if (showSplash) {
+      return <SplashScreen />;
+  }
+  
+  if (!isLoaded || !isAuthReady) {
+      return (
+        <div className="flex flex-col justify-center items-center h-screen text-center bg-slate-900">
+          <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
+          <p className="mt-4 text-lg text-slate-300">{t('INITIALIZING')}</p>
+        </div>
+      );
+  }
+  
+  if (!userProfile) {
+      return <RegistrationPage />;
+  }
+
+  if (authError) {
+      return (
+        <div className="p-4 bg-red-900/50 text-red-300 border-l-4 border-red-500 rounded-r-lg max-w-xl mx-auto">
+          <h2 className="font-bold text-lg">{t('APP_ERROR')}</h2>
+          <p>{authError}</p>
+          <p className="mt-2 text-sm text-slate-400">App ID: {appId}</p>
+        </div>
+      );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans">

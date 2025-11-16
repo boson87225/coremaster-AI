@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Calculator } from './icons';
 import { useTranslation } from '../context/LanguageContext';
+import { PlanContext } from '../context/PlanContext';
 
 interface TdeeCalculatorProps {
     onTdeeCalculated: (tdee: number) => void;
@@ -9,6 +9,8 @@ interface TdeeCalculatorProps {
 
 export const TdeeCalculator: React.FC<TdeeCalculatorProps> = ({ onTdeeCalculated }) => {
     const { t } = useTranslation();
+    const { userProfile } = useContext(PlanContext);
+    
     const activityLevels = [
         { value: 1.2, label: t('ACTIVITY_LEVEL_1') },
         { value: 1.375, label: t('ACTIVITY_LEVEL_2') },
@@ -16,11 +18,11 @@ export const TdeeCalculator: React.FC<TdeeCalculatorProps> = ({ onTdeeCalculated
         { value: 1.725, label: t('ACTIVITY_LEVEL_4') },
         { value: 1.9, label: t('ACTIVITY_LEVEL_5') },
     ];
-    // State for the calculator
-    const [gender, setGender] = useState('male');
-    const [age, setAge] = useState('');
-    const [weight, setWeight] = useState('');
-    const [height, setHeight] = useState('');
+    // State for the calculator, pre-filled from userProfile if available
+    const [gender, setGender] = useState(userProfile?.gender || 'male');
+    const [age, setAge] = useState(userProfile?.age.toString() || '');
+    const [weight, setWeight] = useState(userProfile?.weight.toString() || '');
+    const [height, setHeight] = useState(userProfile?.height.toString() || '');
     const [activityLevel, setActivityLevel] = useState(1.375); // Default to lightly active
     const [error, setError] = useState<string | null>(null);
     

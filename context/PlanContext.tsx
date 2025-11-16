@@ -1,20 +1,22 @@
-
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import type { WorkoutPlan, NutritionPlan, FoodLogItem, PlanContextType, WeightLogItem } from '../types';
+import type { WorkoutPlan, NutritionPlan, FoodLogItem, PlanContextType, WeightLogItem, UserProfile } from '../types';
 
-const PLAN_STORAGE_KEY = 'coreMasterActivePlan';
+const PLAN_STORAGE_KEY = 'coreMasterActivePlan_v2';
 
 const initialContextState: PlanContextType = {
   activeWorkoutPlan: null,
   activeNutritionPlan: null,
   foodLog: [],
   weightLog: [],
+  userProfile: null,
+  isLoaded: false,
   setActivePlan: () => {},
   setActiveWorkoutPlan: () => {},
   addFoodLogItem: () => {},
   removeFoodLogItem: () => {},
   addWeightLogItem: () => {},
   removeWeightLogItem: () => {},
+  setUserProfile: () => {},
   clearPlan: () => {},
 };
 
@@ -25,17 +27,19 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeNutritionPlan, setActiveNutritionPlanState] = useState<NutritionPlan | null>(null);
   const [foodLog, setFoodLog] = useState<FoodLogItem[]>([]);
   const [weightLog, setWeightLog] = useState<WeightLogItem[]>([]);
+  const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const storedData = localStorage.getItem(PLAN_STORAGE_KEY);
       if (storedData) {
-        const { workoutPlan, nutritionPlan, log, weight } = JSON.parse(storedData);
+        const { workoutPlan, nutritionPlan, log, weight, profile } = JSON.parse(storedData);
         if (workoutPlan) setActiveWorkoutPlanState(workoutPlan);
         if (nutritionPlan) setActiveNutritionPlanState(nutritionPlan);
         if (log) setFoodLog(log.map((item: any) => ({...item, timestamp: new Date(item.timestamp)})));
         if (weight) setWeightLog(weight);
+        if (profile) setUserProfileState(profile);
       }
     } catch (error) {
       console.error("Failed to load plan from localStorage", error);
@@ -54,12 +58,13 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
         nutritionPlan: activeNutritionPlan,
         log: todaysLog,
         weight: weightLog,
+        profile: userProfile,
       };
       localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(dataToStore));
     } catch (error) {
       console.error("Failed to save plan to localStorage", error);
     }
-  }, [activeWorkoutPlan, activeNutritionPlan, foodLog, weightLog, isLoaded]);
+  }, [activeWorkoutPlan, activeNutritionPlan, foodLog, weightLog, userProfile, isLoaded]);
 
   const setActivePlan = useCallback((workoutPlan: WorkoutPlan, nutritionPlan: NutritionPlan | null) => {
     setActiveWorkoutPlanState(workoutPlan);
@@ -106,12 +111,16 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setWeightLog(prevLog => prevLog.filter(item => item.date !== date));
   }, []);
 
+  const setUserProfile = useCallback((profile: UserProfile) => {
+    setUserProfileState(profile);
+  }, []);
 
   const clearPlan = useCallback(() => {
     setActiveWorkoutPlanState(null);
     setActiveNutritionPlanState(null);
     setFoodLog([]);
     setWeightLog([]);
+    setUserProfileState(null); // Also clear user profile on full reset
     localStorage.removeItem(PLAN_STORAGE_KEY);
   }, []);
 
@@ -120,12 +129,15 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     activeNutritionPlan,
     foodLog,
     weightLog,
+    userProfile,
+    isLoaded,
     setActivePlan,
     setActiveWorkoutPlan,
     addFoodLogItem,
     removeFoodLogItem,
     addWeightLogItem,
     removeWeightLogItem,
+    setUserProfile,
     clearPlan,
   };
 

@@ -1,6 +1,5 @@
-
 import React, { useContext, useState } from 'react';
-import { User, ClipboardList, Share2, QrCode, Settings } from './icons';
+import { User, ClipboardList, Share2, QrCode, Settings, Dumbbell, Activity, Target as GoalIcon } from './icons';
 import type { Page } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -68,7 +67,7 @@ const ShareSection: React.FC = () => {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ userId, setPage }) => {
-    const { activeWorkoutPlan } = useContext(PlanContext);
+    const { activeWorkoutPlan, userProfile } = useContext(PlanContext);
     const { t } = useTranslation();
     
     return (
@@ -78,7 +77,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userId, setPage }) => 
                     <User className="w-10 h-10 text-cyan-400" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-white">{t('PROFILE_TITLE')}</h1>
+                    <h1 className="text-2xl font-bold text-white">{userProfile?.name || t('PROFILE_TITLE')}</h1>
                     <p className="text-sm text-slate-400 font-mono break-all">{userId || t('ANONYMOUS_USER')}</p>
                 </div>
             </div>
@@ -93,6 +92,30 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userId, setPage }) => 
                 </div>
                 <span className="text-sm text-slate-400">{'>'}</span>
             </button>
+            
+            {userProfile && (
+                 <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700 space-y-3">
+                    <h3 className="text-lg font-bold text-slate-200 mb-2">{t('YOUR_NAME')}</h3>
+                    <div className="grid grid-cols-2 gap-3 text-center">
+                        <div className="bg-slate-700/50 p-2 rounded-lg">
+                            <p className="text-xs text-slate-400">{t('AGE')}</p>
+                            <p className="text-lg font-bold text-slate-200">{userProfile.age}</p>
+                        </div>
+                        <div className="bg-slate-700/50 p-2 rounded-lg">
+                            <p className="text-xs text-slate-400">{t('GENDER')}</p>
+                            <p className="text-lg font-bold text-slate-200">{t(userProfile.gender.toUpperCase() as any)}</p>
+                        </div>
+                        <div className="bg-slate-700/50 p-2 rounded-lg">
+                            <p className="text-xs text-slate-400">{t('WEIGHT')}</p>
+                            <p className="text-lg font-bold text-slate-200">{userProfile.weight} {t('WEIGHT_UNIT')}</p>
+                        </div>
+                        <div className="bg-slate-700/50 p-2 rounded-lg">
+                            <p className="text-xs text-slate-400">{t('HEIGHT')}</p>
+                            <p className="text-lg font-bold text-slate-200">{userProfile.height} {t('HEIGHT_UNIT')}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700 space-y-3">
                 <div className="flex items-center gap-3">

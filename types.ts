@@ -123,18 +123,31 @@ export interface WeightLogItem {
   weight: number; // in kg
 }
 
+// Added for User Profile
+export interface UserProfile {
+  name: string;
+  gender: 'male' | 'female';
+  age: number;
+  weight: number; // in kg
+  height: number; // in cm
+  goal: string; // '增肌', '減脂', '提升耐力'
+}
+
 // Added for Plan Context
 export interface PlanContextType {
     activeWorkoutPlan: WorkoutPlan | null;
     activeNutritionPlan: NutritionPlan | null;
     foodLog: FoodLogItem[];
     weightLog: WeightLogItem[];
+    userProfile: UserProfile | null;
+    isLoaded: boolean;
     setActivePlan: (workoutPlan: WorkoutPlan, nutritionPlan: NutritionPlan | null) => void;
     setActiveWorkoutPlan: (workoutPlan: WorkoutPlan) => void;
     addFoodLogItem: (item: Omit<FoodLogItem, 'id' | 'timestamp'>) => void;
     removeFoodLogItem: (id: string) => void;
     addWeightLogItem: (item: WeightLogItem) => void;
     removeWeightLogItem: (date: string) => void;
+    setUserProfile: (profile: UserProfile) => void;
     clearPlan: () => void;
 }
 

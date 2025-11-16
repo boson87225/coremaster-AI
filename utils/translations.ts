@@ -1,7 +1,7 @@
 export const translations: { [key: string]: { en: string; zh: string } } = {
   // Global & Common
   INITIALIZING: { en: 'Initializing your connection...', zh: '正在初始化您的連線...' },
-  APP_ERROR: { en: 'Application Error', zh: '應用程式錯誤' },
+  APP_ERROR: { en: 'ApplicationError', zh: '應用程式錯誤' },
   PAGE_NOT_FOUND: { en: 'Page not found.', zh: '找不到頁面。' },
   CLOSE_BUTTON: { en: 'Close', zh: '關閉' },
   CLEAR_BUTTON: { en: 'Clear', zh: '清除' },
@@ -196,6 +196,13 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   NUTRITION_AI_LOADING: { en: 'AI nutritionist is preparing your menu...', zh: 'AI 營養師正在為您調配菜單...' },
   NUTRITION_PLAN_ERROR: { en: 'An error occurred while generating the nutrition plan.', zh: '生成飲食計畫時發生錯誤。' },
   CREATE_NEW_PLAN_BUTTON: { en: 'Create a New Plan', zh: '建立新計畫' },
+  
+  // Registration Page
+  REG_TITLE: { en: "Let's Set Up Your Profile", zh: '讓我們設定您的個人檔案' },
+  REG_SUBTITLE: { en: 'This helps us personalize your fitness journey.', zh: '這將幫助我們為您量身打造健身之旅。' },
+  REG_SUBMIT_BUTTON: { en: 'Save & Get Started', zh: '儲存並開始' },
+  YOUR_NAME: { en: 'Your Name', zh: '您的稱呼' },
+  YOUR_NAME_PLACEHOLDER: { en: 'e.g., Alex', zh: '例如：小明' },
   
   // Profile Page
   PROFILE_TITLE: { en: 'Profile', zh: '個人檔案' },
