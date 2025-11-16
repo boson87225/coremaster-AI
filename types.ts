@@ -6,7 +6,7 @@ export interface Exercise {
   secondary: string;
 }
 
-export type Page = 'home' | 'my_plan' | 'workout' | 'tracker' | 'profile' | 'ai_coach' | 'ai_planner';
+export type Page = 'home' | 'my_plan' | 'workout' | 'tracker' | 'profile' | 'ai_coach' | 'ai_planner' | 'settings';
 export type WorkoutPageMode = 'cardio' | 'strength' | 'specialized';
 export type CardioMode = 'hiit' | 'liss';
 export type StrengthMode = 'primary' | 'secondary';

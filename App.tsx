@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-// FIX: Switched to the Firebase v9 compat library for app initialization to resolve module export errors.
-import firebase from 'firebase/compat/app';
+import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 
 import { HomePage } from './components/HomePage';
@@ -11,6 +10,7 @@ import { TrackerPage } from './components/TrackerPage';
 import { ProfilePage } from './components/ProfilePage';
 import { AiCoachPage } from './components/AiCoachPage';
 import { AiPlannerPage } from './components/AiPlannerPage';
+import { SettingsPage } from './components/SettingsPage';
 import { Home, Dumbbell, History, Loader2, User, BrainCircuit, ClipboardList } from './components/icons';
 import type { Page } from './types';
 
@@ -45,6 +45,7 @@ const isRealConfigProvided = typeof __firebase_config !== 'undefined' && __fireb
 const firebaseConfig = isRealConfigProvided ? JSON.parse(__firebase_config) : DUMMY_FIREBASE_CONFIG;
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
+
 const AppContent: React.FC = () => {
   const [page, setPage] = useState<Page>('home'); // Default to Home
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -63,8 +64,8 @@ const AppContent: React.FC = () => {
     }
 
     try {
-      // FIX: Use the compat library's initializeApp and remove the deprecated setLogLevel call.
-      const app = firebase.initializeApp(firebaseConfig);
+      // FIX: Use the modular initializeApp function consistently. This was the cause of the blank page error.
+      const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -122,6 +123,7 @@ const AppContent: React.FC = () => {
       case 'profile': return <ProfilePage userId={userId} setPage={setPage} />;
       case 'ai_coach': return <AiCoachPage />;
       case 'ai_planner': return <AiPlannerPage setPage={setPage}/>;
+      case 'settings': return <SettingsPage userId={userId} setPage={setPage} />;
       default: return <div className="text-center p-4">{t('PAGE_NOT_FOUND')}</div>;
     }
   }, [page, isAuthReady, userId, authError, t]);

@@ -243,6 +243,15 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   SHARE_SHEET_TITLE: { en: 'Check out CoreMaster Fitness!', zh: '快來看看 CoreMaster Fitness！' },
   SHARE_SHEET_TEXT: { en: 'Your personal AI fitness and nutrition coach.', zh: '您的個人 AI 健身與營養教練。' },
 
+  // Settings Page
+  SETTINGS: { en: 'Settings', zh: '設定' },
+  SETTINGS_TITLE: { en: 'Application Settings', zh: '應用程式設定' },
+  BACK_TO_PROFILE: { en: 'Back to Profile', zh: '返回個人檔案' },
+  DATA_MANAGEMENT: { en: 'Data Management', zh: '資料管理' },
+  CLEAR_DATA_DESC: { en: 'This will permanently delete all your current plan data, including workout plans, nutrition plans, and logs. This action cannot be undone.', zh: '這將永久刪除您當前的所有計畫資料，包括訓練計畫、營養計畫和日誌。此操作無法復原。' },
+  CLEAR_ALL_DATA_BUTTON: { en: 'Clear All Plan Data', zh: '清除所有計畫資料' },
+  CLEAR_DATA_CONFIRMATION: { en: 'Are you sure you want to delete all your plan data? This cannot be undone.', zh: '您確定要刪除所有計畫資料嗎？此操作無法復原。' },
+
   // Workout Player
   PLAYER_STATUS_RESTING: { en: 'Resting...', zh: '休息中...' },
   PLAYER_NEXT_EXERCISE: { en: 'Next', zh: '下一個' },

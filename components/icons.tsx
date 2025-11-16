@@ -46,5 +46,7 @@ export {
     CheckCircle,
     // Added for Sharing
     Share2,
-    QrCode
+    QrCode,
+    // Added for Settings
+    Settings
 } from 'lucide-react';
