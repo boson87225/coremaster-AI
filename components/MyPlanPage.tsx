@@ -1,4 +1,3 @@
-
 import React, { useContext, useMemo } from 'react';
 import { PlanContext } from '../context/PlanContext';
 import { WorkoutContext } from '../context/WorkoutContext';
@@ -6,29 +5,34 @@ import { ClipboardList, Play, Zap, Sparkles, UtensilsCrossed, Trash2 } from './i
 import type { Page } from '../types';
 import { useTranslation } from '../context/LanguageContext';
 
-interface MyPlanPageProps {
-  setPage: (page: Page) => void;
-}
-
-const CircularProgress: React.FC<{
+interface CircularProgressProps {
   value: number;
   max: number;
   label: string;
   color: string;
   unit: string;
-}> = ({ value, max, label, color, unit }) => {
-  const radius = 50;
+  size?: 'large' | 'small';
+}
+
+const CircularProgress: React.FC<CircularProgressProps> = ({ value, max, label, color, unit, size = 'large' }) => {
+  const isLarge = size === 'large';
+  const radius = isLarge ? 50 : 35;
+  const strokeWidth = isLarge ? 10 : 6;
+  const dimensions = isLarge ? 'w-28 h-28' : 'w-20 h-20';
+  const textClass = isLarge ? 'text-2xl' : 'text-lg';
+  const subTextClass = isLarge ? 'text-xs' : 'text-[10px]';
+
   const circumference = 2 * Math.PI * radius;
   const progress = max > 0 ? Math.min(value / max, 1) : 0;
   const offset = circumference * (1 - progress);
 
   return (
     <div className="flex flex-col items-center justify-center text-center">
-      <div className="relative w-28 h-28">
+      <div className={`relative ${dimensions}`}>
         <svg className="w-full h-full" viewBox="0 0 120 120">
           <circle
             className="text-slate-700"
-            strokeWidth="8"
+            strokeWidth={strokeWidth - 2}
             stroke="currentColor"
             fill="transparent"
             r={radius}
@@ -37,7 +41,7 @@ const CircularProgress: React.FC<{
           />
           <circle
             className={color}
-            strokeWidth="10"
+            strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
@@ -50,8 +54,8 @@ const CircularProgress: React.FC<{
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-white">{Math.round(value)}</span>
-          <span className="text-xs text-slate-400">/ {Math.round(max)} {unit}</span>
+          <span className={`${textClass} font-bold text-white`}>{Math.round(value)}</span>
+          <span className={`${subTextClass} text-slate-400`}>/ {Math.round(max)} {unit}</span>
         </div>
       </div>
       <p className="mt-2 text-sm font-semibold text-slate-300">{label}</p>
@@ -94,6 +98,10 @@ const NutritionTracker: React.FC = () => {
     }
     
     const { dailyCalorieTarget } = activeNutritionPlan;
+    // Assuming a 40% carbs, 30% protein, 30% fat split for target calculation
+    const proteinTarget = dailyCalorieTarget * 0.3 / 4;
+    const carbsTarget = dailyCalorieTarget * 0.4 / 4;
+    const fatTarget = dailyCalorieTarget * 0.3 / 9;
     
     return (
         <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700 space-y-4">
@@ -101,39 +109,43 @@ const NutritionTracker: React.FC = () => {
                 <div className="p-2 bg-green-500/10 rounded-full"><UtensilsCrossed className="w-5 h-5 text-green-400" /></div>
                 <h3 className="text-lg font-bold text-slate-200">{t('TODAYS_NUTRITION_GOALS')}</h3>
             </div>
-             <div className="relative p-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <CircularProgress 
-                        value={totals.protein} 
-                        max={dailyCalorieTarget * 0.3 / 4} 
-                        color="text-blue-500" 
-                        label={t('PROTEIN')} 
-                        unit="g" 
-                    />
-                    <CircularProgress 
-                        value={totals.carbs} 
-                        max={dailyCalorieTarget * 0.4 / 4} 
-                        color="text-yellow-400" 
-                        label={t('CARBS')} 
-                        unit="g" 
-                    />
-                    <CircularProgress 
-                        value={totals.fat} 
-                        max={dailyCalorieTarget * 0.3 / 9} 
-                        color="text-purple-500" 
-                        label={t('FAT')} 
-                        unit="g" 
-                    />
-                </div>
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <CircularProgress 
-                        value={totals.calories} 
-                        max={dailyCalorieTarget} 
-                        color="text-green-500" 
-                        label={t('TOTAL_CALORIES')} 
-                        unit={t('CALORIES_UNIT_SHORT')} 
-                    />
-                 </div>
+            
+            <div className="flex justify-center pt-2">
+                <CircularProgress 
+                    value={totals.calories} 
+                    max={dailyCalorieTarget} 
+                    color="text-green-500" 
+                    label={t('TOTAL_CALORIES')} 
+                    unit={t('CALORIES_UNIT_SHORT')}
+                    size="large"
+                />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-700/50">
+                <CircularProgress 
+                    value={totals.protein} 
+                    max={proteinTarget} 
+                    color="text-blue-500" 
+                    label={t('PROTEIN')} 
+                    unit="g" 
+                    size="small"
+                />
+                <CircularProgress 
+                    value={totals.carbs} 
+                    max={carbsTarget} 
+                    color="text-yellow-400" 
+                    label={t('CARBS')} 
+                    unit="g" 
+                    size="small"
+                />
+                <CircularProgress 
+                    value={totals.fat} 
+                    max={fatTarget} 
+                    color="text-purple-500" 
+                    label={t('FAT')} 
+                    unit="g" 
+                    size="small"
+                />
             </div>
         </div>
     );
@@ -185,6 +197,11 @@ const TodaysWorkout: React.FC = () => {
         </div>
     );
 };
+
+// Fix: Define the props interface for the MyPlanPage component.
+interface MyPlanPageProps {
+    setPage: (page: Page) => void;
+}
 
 export const MyPlanPage: React.FC<MyPlanPageProps> = ({ setPage }) => {
     const { activeWorkoutPlan, clearPlan } = useContext(PlanContext);

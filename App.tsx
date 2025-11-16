@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
@@ -139,32 +138,28 @@ const AppContent: React.FC = () => {
   );
 
   return (
-    <PlanProvider>
-      <WorkoutProvider>
-        <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans">
-          <header className="bg-slate-950/70 backdrop-blur-lg border-b border-slate-800 shadow-lg p-4 text-center sticky top-0 z-20">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-wide">CoreMaster Fitness</h1>
-          </header>
-          
-          <main className="flex-grow p-2 md:p-4 pb-24 max-w-2xl mx-auto w-full">
-            {renderPage()}
-          </main>
-          
-          <nav className="fixed bottom-0 left-0 right-0 w-full bg-slate-950/80 backdrop-blur-lg border-t border-slate-800 shadow-top z-20">
-            <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
-              <NavButton targetPage="home" label={t('NAV_HOME')} icon={<Home className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
-              <NavButton targetPage="my_plan" label={t('NAV_MY_PLAN')} icon={<ClipboardList className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
-              <NavButton targetPage="workout" label={t('NAV_WORKOUT')} icon={<Dumbbell className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
-              <NavButton targetPage="tracker" label={t('NAV_TRACKER')} icon={<History className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
-              <NavButton targetPage="ai_coach" label={t('NAV_AI_COACH')} icon={<BrainCircuit className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
-              <NavButton targetPage="profile" label={t('NAV_PROFILE')} icon={<User className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
-            </div>
-          </nav>
-
-          <WorkoutPlayer />
+    <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col font-sans">
+      <header className="bg-slate-950/70 backdrop-blur-lg border-b border-slate-800 shadow-lg p-4 text-center sticky top-0 z-20">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-wide">CoreMaster Fitness</h1>
+      </header>
+      
+      <main className="flex-grow p-2 md:p-4 pb-24 max-w-2xl mx-auto w-full">
+        {renderPage()}
+      </main>
+      
+      <nav className="fixed bottom-0 left-0 right-0 w-full bg-slate-950/80 backdrop-blur-lg border-t border-slate-800 shadow-top z-20">
+        <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+          <NavButton targetPage="home" label={t('NAV_HOME')} icon={<Home className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
+          <NavButton targetPage="my_plan" label={t('NAV_MY_PLAN')} icon={<ClipboardList className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
+          <NavButton targetPage="workout" label={t('NAV_WORKOUT')} icon={<Dumbbell className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
+          <NavButton targetPage="tracker" label={t('NAV_TRACKER')} icon={<History className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
+          <NavButton targetPage="ai_coach" label={t('NAV_AI_COACH')} icon={<BrainCircuit className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
+          <NavButton targetPage="profile" label={t('NAV_PROFILE')} icon={<User className="w-6 h-6" />} activeColor="text-cyan-400 bg-cyan-500/10" />
         </div>
-      </WorkoutProvider>
-    </PlanProvider>
+      </nav>
+
+      <WorkoutPlayer />
+    </div>
   );
 }
 
@@ -172,7 +167,11 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <LanguageProvider>
-      <AppContent />
+      <PlanProvider>
+        <WorkoutProvider>
+          <AppContent />
+        </WorkoutProvider>
+      </PlanProvider>
     </LanguageProvider>
   );
 }
