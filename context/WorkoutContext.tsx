@@ -28,7 +28,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [workoutState, setWorkoutState] = useState<WorkoutState>(initialState);
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
-  const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { t } = useTranslation();
 
   // Lazily initialize and get the AudioContext
@@ -89,6 +88,55 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  const nextExercise = useCallback(() => {
+    setWorkoutState(prev => {
+        if (!prev.currentPlan) {
+            return prev;
+        }
+
+        const currentDay = prev.currentPlan.days[prev.currentDayIndex];
+        const isLastExercise = prev.currentExerciseIndex >= currentDay.exercises.length - 1;
+
+        if (isLastExercise) {
+            speak(t('TTS_END_WORKOUT'));
+            return initialState;
+        } else {
+            const nextIndex = prev.currentExerciseIndex + 1;
+            const nextExerciseName = currentDay.exercises[nextIndex].name;
+            speak(t('TTS_NEXT_EXERCISE', { exercise: nextExerciseName }));
+            return { ...prev, currentExerciseIndex: nextIndex, status: 'playing', restTimer: 0 };
+        }
+    });
+  }, [speak, t]);
+
+  // Effect to manage the rest timer countdown
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    if (workoutState.status === 'resting' && workoutState.restTimer > 0) {
+      timer = setInterval(() => {
+        setWorkoutState(prev => {
+          const newTime = prev.restTimer - 1;
+          // Speak countdown for the last 3 seconds
+          if (newTime <= 3 && newTime > 0) {
+            speak(String(newTime));
+          }
+          return { ...prev, restTimer: newTime >= 0 ? newTime : 0 };
+        });
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [workoutState.status, workoutState.restTimer > 0, speak]);
+
+  // Effect to transition to the next exercise when the timer finishes
+  useEffect(() => {
+    if (workoutState.status === 'resting' && workoutState.restTimer === 0) {
+      nextExercise();
+    }
+  }, [workoutState.status, workoutState.restTimer, nextExercise]);
+
+
   const startWorkout = useCallback((plan: WorkoutPlan, dayIndex: number) => {
     setWorkoutState({
       ...initialState,
@@ -102,33 +150,19 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [speak, t]);
 
   const pauseWorkout = () => {
-    if (workoutState.status === 'playing') {
+    if (workoutState.status === 'playing' || workoutState.status === 'resting') {
       setWorkoutState(prev => ({ ...prev, status: 'paused' }));
     }
   };
   
-  const resumeWorkout = () => {
-    if (workoutState.status === 'paused') {
-      setWorkoutState(prev => ({ ...prev, status: 'playing' }));
-    }
-  };
-
-  const nextExercise = useCallback(() => {
-    if (!workoutState.currentPlan) return;
-
-    const currentDay = workoutState.currentPlan.days[workoutState.currentDayIndex];
-    const isLastExercise = workoutState.currentExerciseIndex >= currentDay.exercises.length - 1;
-
-    if (isLastExercise) {
-      endWorkout();
-    } else {
-      const nextIndex = workoutState.currentExerciseIndex + 1;
-      setWorkoutState(prev => ({ ...prev, currentExerciseIndex: nextIndex, status: 'playing' }));
-      const nextExerciseName = currentDay.exercises[nextIndex].name;
-      speak(t('TTS_NEXT_EXERCISE', { exercise: nextExerciseName }));
-    }
-  }, [workoutState, speak, t]);
-
+  const resumeWorkout = useCallback(() => {
+    setWorkoutState(prev => {
+        if (prev.status !== 'paused') return prev;
+        // If there was rest time left, go back to resting. Otherwise, go to playing.
+        return { ...prev, status: prev.restTimer > 0 ? 'resting' : 'playing' };
+    });
+  }, []);
+  
   const endWorkout = () => {
     setWorkoutState(initialState);
     speak(t('TTS_END_WORKOUT'));
@@ -139,37 +173,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const startRest = useCallback(() => {
-    if (!workoutState.currentPlan) return;
-    const currentExercise = workoutState.currentPlan.days[workoutState.currentDayIndex].exercises[workoutState.currentExerciseIndex];
-    const restDuration = parseInt(currentExercise.rest, 10) || 60;
+    setWorkoutState(prevState => {
+      if (!prevState.currentPlan || prevState.status !== 'playing') return prevState;
 
-    setWorkoutState(prev => ({ ...prev, status: 'resting', restTimer: restDuration }));
-    speak(t('TTS_START_REST', { duration: restDuration.toString() }));
+      const currentExercise = prevState.currentPlan.days[prevState.currentDayIndex].exercises[prevState.currentExerciseIndex];
+      const restDuration = parseInt(currentExercise.rest, 10) || 60;
 
-    if (restIntervalRef.current) clearInterval(restIntervalRef.current);
-    restIntervalRef.current = setInterval(() => {
-        setWorkoutState(prev => {
-            if (prev.restTimer <= 1) {
-                clearInterval(restIntervalRef.current!);
-                nextExercise();
-                return { ...prev, status: 'playing', restTimer: 0 };
-            }
-             if (prev.restTimer <= 4) {
-                 speak(`${prev.restTimer-1}`);
-             }
-            return { ...prev, restTimer: prev.restTimer - 1 };
-        });
-    }, 1000);
-  }, [workoutState.currentPlan, workoutState.currentDayIndex, workoutState.currentExerciseIndex, speak, nextExercise, t]);
+      speak(t('TTS_START_REST', { duration: restDuration.toString() }));
 
-   useEffect(() => {
-    // Cleanup interval on component unmount or workout end
-    return () => {
-      if (restIntervalRef.current) {
-        clearInterval(restIntervalRef.current);
-      }
-    };
-  }, []);
+      return { ...prevState, status: 'resting', restTimer: restDuration };
+    });
+  }, [speak, t]);
 
   return (
     <WorkoutContext.Provider value={{ workoutState, startWorkout, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest }}>

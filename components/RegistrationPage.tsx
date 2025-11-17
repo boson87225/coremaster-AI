@@ -1,3 +1,4 @@
+
 import React, { useState, useContext } from 'react';
 import { Dumbbell, User } from './icons';
 import { PlanContext } from '../context/PlanContext';
@@ -13,7 +14,7 @@ export const RegistrationPage: React.FC = () => {
   const [age, setAge] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
-  const [goal, setGoal] = useState('增肌');
+  const [goal, setGoal] = useState<UserProfile['goal']>('MUSCLE_GAIN');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,10 +82,10 @@ export const RegistrationPage: React.FC = () => {
             
             <div>
                 <label htmlFor="goal" className="block text-sm font-medium text-slate-300">{t('PRIMARY_GOAL')}</label>
-                <select id="goal" value={goal} onChange={e => setGoal(e.target.value)} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500">
-                    <option value="增肌">{t('GOAL_MUSCLE_GAIN')}</option>
-                    <option value="減脂">{t('GOAL_FAT_LOSS')}</option>
-                    <option value="提升耐力">{t('GOAL_ENDURANCE')}</option>
+                <select id="goal" value={goal} onChange={e => setGoal(e.target.value as UserProfile['goal'])} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500">
+                    <option value="MUSCLE_GAIN">{t('GOAL_MUSCLE_GAIN')}</option>
+                    <option value="FAT_LOSS">{t('GOAL_FAT_LOSS')}</option>
+                    <option value="ENDURANCE">{t('GOAL_ENDURANCE')}</option>
                 </select>
             </div>
 

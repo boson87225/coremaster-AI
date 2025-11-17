@@ -1,6 +1,7 @@
-import React, { useContext, useState } from 'react';
-import { User, ClipboardList, Share2, QrCode, Settings, Dumbbell, Activity, Target as GoalIcon } from './icons';
-import type { Page } from '../types';
+
+import React, { useContext, useState, useEffect } from 'react';
+import { User, ClipboardList, Share2, QrCode, Settings, Dumbbell, Activity, Target as GoalIcon, Edit } from './icons';
+import type { Page, UserProfile } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { QrCodeModal } from './QrCodeModal';
@@ -67,8 +68,52 @@ const ShareSection: React.FC = () => {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ userId, setPage }) => {
-    const { activeWorkoutPlan, userProfile } = useContext(PlanContext);
+    const { activeWorkoutPlan, userProfile, setUserProfile } = useContext(PlanContext);
     const { t } = useTranslation();
+    const [isEditing, setIsEditing] = useState(false);
+    
+    const [formData, setFormData] = useState({
+        name: userProfile?.name || '',
+        gender: userProfile?.gender || 'male',
+        age: userProfile?.age.toString() || '',
+        weight: userProfile?.weight.toString() || '',
+        height: userProfile?.height.toString() || '',
+        goal: userProfile?.goal || 'MUSCLE_GAIN'
+    });
+
+    useEffect(() => {
+        if (userProfile) {
+            setFormData({
+                name: userProfile.name,
+                gender: userProfile.gender,
+                age: userProfile.age.toString(),
+                weight: userProfile.weight.toString(),
+                height: userProfile.height.toString(),
+                goal: userProfile.goal,
+            });
+        }
+    }, [userProfile]);
+
+    const handleSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        const ageNum = parseInt(formData.age, 10);
+        const weightNum = parseFloat(formData.weight);
+        const heightNum = parseFloat(formData.height);
+
+        if (formData.name && ageNum > 0 && weightNum > 0 && heightNum > 0) {
+            setUserProfile({
+                name: formData.name,
+                gender: formData.gender as 'male' | 'female',
+                age: ageNum,
+                weight: weightNum,
+                height: heightNum,
+                goal: formData.goal as UserProfile['goal'],
+            });
+            setIsEditing(false);
+        } else {
+            alert("Please fill in all fields with valid information.");
+        }
+    };
     
     return (
         <section className="p-4 md:p-6 bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl max-w-lg mx-auto space-y-6">
@@ -94,26 +139,48 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ userId, setPage }) => 
             </button>
             
             {userProfile && (
-                 <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700 space-y-3">
-                    <h3 className="text-lg font-bold text-slate-200 mb-2">{t('YOUR_NAME')}</h3>
-                    <div className="grid grid-cols-2 gap-3 text-center">
-                        <div className="bg-slate-700/50 p-2 rounded-lg">
-                            <p className="text-xs text-slate-400">{t('AGE')}</p>
-                            <p className="text-lg font-bold text-slate-200">{userProfile.age}</p>
-                        </div>
-                        <div className="bg-slate-700/50 p-2 rounded-lg">
-                            <p className="text-xs text-slate-400">{t('GENDER')}</p>
-                            <p className="text-lg font-bold text-slate-200">{t(userProfile.gender.toUpperCase() as any)}</p>
-                        </div>
-                        <div className="bg-slate-700/50 p-2 rounded-lg">
-                            <p className="text-xs text-slate-400">{t('WEIGHT')}</p>
-                            <p className="text-lg font-bold text-slate-200">{userProfile.weight} {t('WEIGHT_UNIT')}</p>
-                        </div>
-                        <div className="bg-slate-700/50 p-2 rounded-lg">
-                            <p className="text-xs text-slate-400">{t('HEIGHT')}</p>
-                            <p className="text-lg font-bold text-slate-200">{userProfile.height} {t('HEIGHT_UNIT')}</p>
-                        </div>
+                 <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-lg font-bold text-slate-200">{isEditing ? t('EDIT_PROFILE_TITLE') : t('YOUR_NAME')}</h3>
+                        {!isEditing && (
+                            <button onClick={() => setIsEditing(true)} className="flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full">
+                                <Edit size={14} /> {t('EDIT')}
+                            </button>
+                        )}
                     </div>
+                    {isEditing ? (
+                        <form onSubmit={handleSave} className="space-y-4 animate-fade-in">
+                            <div>
+                                <label htmlFor="name" className="block text-sm font-medium text-slate-300">{t('YOUR_NAME')}</label>
+                                <input id="name" type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md" required />
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div><label htmlFor="age" className="block text-sm font-medium text-slate-300">{t('AGE')}</label><input id="age" type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md" required /></div>
+                                <div><label htmlFor="weight" className="block text-sm font-medium text-slate-300">{t('WEIGHT')}</label><input id="weight" type="number" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md" required /></div>
+                                <div><label htmlFor="height" className="block text-sm font-medium text-slate-300">{t('HEIGHT')}</label><input id="height" type="number" value={formData.height} onChange={e => setFormData({...formData, height: e.target.value})} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md" required /></div>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-slate-300">{t('GENDER')}</label>
+                                <div className="mt-1 grid grid-cols-2 gap-3"><label className={`flex items-center p-3 border rounded-md cursor-pointer ${formData.gender === 'male' ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-slate-700/50 border-slate-600'}`}><input type="radio" name="gender" value="male" checked={formData.gender === 'male'} onChange={() => setFormData({...formData, gender: 'male'})} className="h-4 w-4 text-cyan-500 bg-slate-600 border-slate-500 focus:ring-cyan-500" /><span className="ml-3 font-medium text-slate-200">{t('MALE')}</span></label><label className={`flex items-center p-3 border rounded-md cursor-pointer ${formData.gender === 'female' ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-slate-700/50 border-slate-600'}`}><input type="radio" name="gender" value="female" checked={formData.gender === 'female'} onChange={() => setFormData({...formData, gender: 'female'})} className="h-4 w-4 text-cyan-500 bg-slate-600 border-slate-500 focus:ring-cyan-500" /><span className="ml-3 font-medium text-slate-200">{t('FEMALE')}</span></label></div>
+                            </div>
+                             <div>
+                                <label htmlFor="goal" className="block text-sm font-medium text-slate-300">{t('PRIMARY_GOAL')}</label>
+                                <select id="goal" value={formData.goal} onChange={e => setFormData({...formData, goal: e.target.value as UserProfile['goal']})} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md"><option value="MUSCLE_GAIN">{t('GOAL_MUSCLE_GAIN')}</option><option value="FAT_LOSS">{t('GOAL_FAT_LOSS')}</option><option value="ENDURANCE">{t('GOAL_ENDURANCE')}</option></select>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => setIsEditing(false)} className="flex-1 py-2 px-4 bg-slate-600 text-white font-semibold rounded-full hover:bg-slate-700 transition">{t('CANCEL')}</button>
+                                <button type="submit" className="flex-1 py-2 px-4 bg-cyan-600 text-white font-semibold rounded-full hover:bg-cyan-700 transition">{t('SAVE_CHANGES')}</button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('AGE')}</p><p className="text-lg font-bold text-slate-200">{userProfile.age}</p></div>
+                            <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('GENDER')}</p><p className="text-lg font-bold text-slate-200">{t(userProfile.gender.toUpperCase() as any)}</p></div>
+                            <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('WEIGHT')}</p><p className="text-lg font-bold text-slate-200">{userProfile.weight} {t('WEIGHT_UNIT')}</p></div>
+                            <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('HEIGHT')}</p><p className="text-lg font-bold text-slate-200">{userProfile.height} {t('HEIGHT_UNIT')}</p></div>
+                            <div className="bg-slate-700/50 p-3 rounded-lg text-center col-span-2"><p className="text-xs text-slate-400">{t('GOAL')}</p><p className="text-lg font-bold text-slate-200">{t(`GOAL_${userProfile.goal}`)}</p></div>
+                        </div>
+                    )}
                 </div>
             )}
             

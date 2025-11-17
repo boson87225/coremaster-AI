@@ -13,6 +13,9 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   PROTEIN: { en: 'Protein', zh: '蛋白' },
   CARBS: { en: 'Carbs', zh: '碳水' },
   FAT: { en: 'Fat', zh: '脂肪' },
+  EDIT: { en: 'Edit', zh: '編輯' },
+  CANCEL: { en: 'Cancel', zh: '取消' },
+  SAVE_CHANGES: { en: 'Save Changes', zh: '儲存變更' },
 
   // Navigation
   NAV_HOME: { en: 'Home', zh: '首頁' },
@@ -206,6 +209,7 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   
   // Profile Page
   PROFILE_TITLE: { en: 'Profile', zh: '個人檔案' },
+  EDIT_PROFILE_TITLE: { en: 'Edit Profile', zh: '編輯個人檔案' },
   ANONYMOUS_USER: { en: 'Anonymous User', zh: '匿名使用者' },
   CURRENT_PLAN_TITLE: { en: 'Current Plan', zh: '當前計畫' },
   VIEW_PLAN_BUTTON: { en: 'View Plan', zh: '查看計畫' },
@@ -228,6 +232,7 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   WEIGHT_UNIT: { en: 'kg', zh: '公斤' },
   HEIGHT: { en: 'Height', zh: '身高' },
   HEIGHT_UNIT: { en: 'cm', zh: '公分' },
+  GOAL: { en: 'Goal', zh: '目標' },
   ACTIVITY_LEVEL: { en: 'Activity Level', zh: '活動量' },
   ACTIVITY_LEVEL_1: { en: 'Sedentary (little or no exercise)', zh: '久坐 (幾乎不運動)' },
   ACTIVITY_LEVEL_2: { en: 'Lightly active (exercise 1-3 days/week)', zh: '輕度活動 (每週運動1-3天)' },

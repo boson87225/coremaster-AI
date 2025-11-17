@@ -130,7 +130,7 @@ export interface UserProfile {
   age: number;
   weight: number; // in kg
   height: number; // in cm
-  goal: string; // '增肌', '減脂', '提升耐力'
+  goal: 'MUSCLE_GAIN' | 'FAT_LOSS' | 'ENDURANCE';
 }
 
 // Added for Plan Context
