@@ -178,12 +178,12 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         }
     };
     
-    const handleSetApiKeyAndRetry = async () => {
+    const handleSetApiKey = async () => {
         if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
             await (window as any).aistudio.openSelectKey();
-            // After user action, simulate form submission to retry
-            const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
-            handleSubmit(fakeEvent);
+            // After setting the key, just remove the error.
+            // The user can now click the main "Generate Plan" button again.
+            setApiKeyError(false);
         }
     };
 
@@ -193,6 +193,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         setIsNutritionLoading(true);
         setNutritionError(null);
         setNutritionPlan(null);
+        setApiKeyError(false);
 
         try {
             const translatedGoal = t(`GOAL_${goal.toUpperCase()}`);
@@ -232,7 +233,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                 <ClipboardList className="w-6 h-6 mr-2" /> {t('AI_PLANNER_TITLE')}
             </h2>
             
-            {!plan && !isLoading && (
+            {!plan && !isLoading && !apiKeyError && (
                 <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
                     <div>
                         <label htmlFor="goal" className="block text-sm font-medium text-slate-300">{t('PRIMARY_GOAL')}</label>
@@ -272,7 +273,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                  <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
                     <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
                     <p className="text-sm mt-1">{t('API_KEY_MISSING_ERROR_DESC')}</p>
-                     <button onClick={handleSetApiKeyAndRetry} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                     <button onClick={handleSetApiKey} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
                         {t('SET_API_KEY_BUTTON')}
                     </button>
                 </div>

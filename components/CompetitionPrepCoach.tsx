@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Loader2, User, X } from './icons';
 import { getCompetitionPrepStream } from '../services/geminiService';
@@ -20,6 +19,7 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,9 +33,18 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
       }
   }, [t]);
 
+  const handleSetApiKey = async () => {
+    if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
+        await (window as any).aistudio.openSelectKey();
+        setApiKeyError(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    setApiKeyError(false);
 
     const userMessage: ChatMessage = { role: 'user', text: input };
     setMessages(prev => [...prev, userMessage]);
@@ -62,6 +71,10 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
       }
     } catch (err: any) {
       console.error(err);
+      const errorMessage = err.toString().toLowerCase();
+       if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+            setApiKeyError(true);
+      }
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
@@ -104,6 +117,14 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
             ))}
             <div ref={messagesEndRef} />
         </div>
+        {apiKeyError && (
+             <div className="p-2 text-center bg-red-900/50 text-red-300 border-t border-slate-700">
+                 <p className="text-sm">{t('API_KEY_MISSING_ERROR_DESC')}</p>
+                 <button onClick={handleSetApiKey} className="mt-2 px-3 py-1 bg-cyan-600 text-white text-sm font-semibold rounded-md hover:bg-cyan-700">
+                    {t('SET_API_KEY_BUTTON')}
+                </button>
+            </div>
+        )}
         <form onSubmit={handleSubmit} className="p-2 border-t border-slate-700 flex items-center space-x-2">
             <input
             type="text"

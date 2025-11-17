@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useMemo, useContext } from 'react';
 import { History, Camera, Loader2, X, Trash2, Edit, List, Scale } from './icons';
 import { recognizeFoodInImage } from '../services/geminiService';
@@ -67,6 +66,7 @@ const FoodTracker: React.FC = () => {
   const [inputMode, setInputMode] = useState<InputMode>('camera');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
+  const [apiKeyError, setApiKeyError] = useState(false);
 
   const totalCalories = useMemo(() => {
     return foodLog.reduce((sum, item) => sum + item.calories, 0);
@@ -80,14 +80,20 @@ const FoodTracker: React.FC = () => {
     setRecognizedFood(null);
     setError(null);
     setIsLoading(true);
+    setApiKeyError(false);
 
     try {
       const base64Image = await fileToBase64(file);
       const results = await recognizeFoodInImage(base64Image);
       setRecognizedFood(results);
-    } catch (err: any)      {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(t('RECOGNITION_FAILED', { message: errorMessage }));
+    } catch (err: any) {
+        const errorMessage = err.toString().toLowerCase();
+        if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+            setApiKeyError(true);
+        } else {
+            const displayMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+            setError(t('RECOGNITION_FAILED', { message: displayMessage }));
+        }
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +113,13 @@ const FoodTracker: React.FC = () => {
       setRecognizedFood(null);
       setSelectedImage(null);
   }
+  
+  const handleSetApiKey = async () => {
+      if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
+          await (window as any).aistudio.openSelectKey();
+          setApiKeyError(false);
+      }
+  };
 
   return (
     <div className="space-y-6">
@@ -146,15 +159,25 @@ const FoodTracker: React.FC = () => {
           <p className="mt-3 text-slate-300 font-semibold">{t('AI_ANALYZING')}</p>
         </div>
       )}
+      
+      {apiKeyError && (
+         <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
+            <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
+            <p className="text-sm mt-1">{t('API_KEY_MISSING_ERROR_DESC')}</p>
+             <button onClick={handleSetApiKey} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                {t('SET_API_KEY_BUTTON')}
+            </button>
+        </div>
+      )}
 
-      {error && (
+      {error && !apiKeyError && (
         <div className="p-3 bg-red-900/50 text-red-300 rounded-lg text-center">
             <p>{error}</p>
-            <button onClick={() => setError(null)} className="mt-2 text-sm font-semibold underline">{t('CLOSE_BUTTON')}</button>
+            <button onClick={() => { setError(null); setSelectedImage(null); }} className="mt-2 text-sm font-semibold underline">{t('CLOSE_BUTTON')}</button>
         </div>
       )}
       
-      {selectedImage && !recognizedFood && !isLoading && (
+      {selectedImage && !recognizedFood && !isLoading && !error && !apiKeyError && (
            <div className="relative animate-fade-in">
               <img src={selectedImage} alt={t('SELECTED_FOOD_ALT')} className="rounded-lg w-full h-auto" />
               <button onClick={() => setSelectedImage(null)} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full"><X size={18} /></button>

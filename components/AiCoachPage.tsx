@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Loader2, User, BrainCircuit, Trash2 } from './icons';
 import { getAiCoachResponseStream } from '../services/geminiService';
@@ -32,6 +31,7 @@ export const AiCoachPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [apiKeyError, setApiKeyError] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,9 +61,19 @@ export const AiCoachPage: React.FC = () => {
     setMessages(getInitialMessages(t));
   };
 
+  const handleSetApiKey = async () => {
+    if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
+        await (window as any).aistudio.openSelectKey();
+        setApiKeyError(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    setError(null);
+    setApiKeyError(false);
 
     const userMessage: ChatMessage = { role: 'user', text: input };
     setMessages(prev => [...prev, userMessage]);
@@ -71,7 +81,6 @@ export const AiCoachPage: React.FC = () => {
     const currentInput = input;
     setInput('');
     setIsLoading(true);
-    setError(null);
     
     // Add a placeholder for the model's response
     setMessages(prev => [...prev, { role: 'model', text: '' }]);
@@ -92,7 +101,12 @@ export const AiCoachPage: React.FC = () => {
         });
       }
     } catch (err: any) {
-      setError(t('AI_COACH_ERROR'));
+      const errorMessage = err.toString().toLowerCase();
+      if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+          setApiKeyError(true);
+      } else {
+        setError(t('AI_COACH_ERROR'));
+      }
       console.error(err);
       // Remove the user message and the placeholder on error
       setMessages(prev => prev.slice(0, -2)); 
@@ -137,7 +151,22 @@ export const AiCoachPage: React.FC = () => {
         ))}
         <div ref={messagesEndRef} />
       </div>
-      {error && <p className="text-red-400 text-sm p-4">{error}</p>}
+
+      {(error || apiKeyError) && (
+        <div className="p-4 border-t border-slate-700">
+            {apiKeyError && (
+                 <div className="p-3 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
+                    <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
+                    <p className="text-sm mt-1">{t('API_KEY_MISSING_ERROR_DESC')}</p>
+                     <button onClick={handleSetApiKey} className="mt-3 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                        {t('SET_API_KEY_BUTTON')}
+                    </button>
+                </div>
+            )}
+            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="p-4 border-t border-slate-700 flex items-center space-x-2">
         <input
           type="text"

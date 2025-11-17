@@ -7,19 +7,16 @@ import type { Page } from '../types';
 
 const AiInsight: React.FC = () => {
     const { t } = useTranslation();
-    const { activeWorkoutPlan, activeNutritionPlan, weightLog, foodLog } = useContext(PlanContext);
+    const { activeWorkoutPlan, activeNutritionPlan, weightLog, foodLog, userProfile } = useContext(PlanContext);
     const [tip, setTip] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [apiKeyError, setApiKeyError] = useState(false);
 
     const generateTip = useCallback(async () => {
-        if (!process.env.API_KEY) {
-            setError(t('AI_INSIGHT_ERROR_NO_KEY'));
-            setIsLoading(false);
-            return;
-        }
         setIsLoading(true);
         setError(null);
+        setApiKeyError(false);
         try {
             const weightTrend = () => {
                 if (weightLog.length < 2) return 'stable';
@@ -42,7 +39,7 @@ const AiInsight: React.FC = () => {
             };
 
             const insightData = {
-                goal: activeWorkoutPlan?.planSummary,
+                goal: userProfile?.goal,
                 todayWorkoutFocus: activeWorkoutPlan?.days[0]?.focus,
                 weightTrend: weightTrend(),
                 calorieStatus: calorieStatus(),
@@ -51,12 +48,17 @@ const AiInsight: React.FC = () => {
             const newTip = await getAiInsightTip(insightData);
             setTip(newTip);
             sessionStorage.setItem('coreMasterTip', newTip);
-        } catch (err) {
-            setError(t('AI_INSIGHT_ERROR'));
+        } catch (err: any) {
+            const errorMessage = err.toString().toLowerCase();
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+                setApiKeyError(true);
+            } else {
+                setError(t('AI_INSIGHT_ERROR'));
+            }
         } finally {
             setIsLoading(false);
         }
-    }, [activeWorkoutPlan, activeNutritionPlan, weightLog, foodLog, t]);
+    }, [activeWorkoutPlan, activeNutritionPlan, weightLog, foodLog, userProfile, t]);
 
     useEffect(() => {
         const cachedTip = sessionStorage.getItem('coreMasterTip');
@@ -72,6 +74,14 @@ const AiInsight: React.FC = () => {
         generateTip();
     };
 
+    const handleSetApiKey = async () => {
+        if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
+            await (window as any).aistudio.openSelectKey();
+            setApiKeyError(false);
+        }
+    };
+
+
     return (
         <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
             <div className="flex justify-between items-center mb-2">
@@ -84,8 +94,20 @@ const AiInsight: React.FC = () => {
                 </button>
             </div>
             {isLoading && <p className="text-sm text-slate-400 text-center py-4">{t('AI_INSIGHT_LOADING')}</p>}
-            {error && <p className="text-sm text-red-400 text-center py-4">{error}</p>}
-            {tip && !isLoading && <p className="text-slate-300">{tip}</p>}
+            
+            {apiKeyError && (
+                 <div className="py-4 text-center bg-red-900/50 text-red-300">
+                    <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
+                    <p className="text-sm mt-1">{t('AI_INSIGHT_ERROR')}</p>
+                     <button onClick={handleSetApiKey} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                        {t('SET_API_KEY_BUTTON')}
+                    </button>
+                </div>
+            )}
+            
+            {error && !apiKeyError && <p className="text-sm text-red-400 text-center py-4">{error}</p>}
+            
+            {tip && !isLoading && !error && !apiKeyError && <p className="text-slate-300">{tip}</p>}
         </div>
     );
 }
