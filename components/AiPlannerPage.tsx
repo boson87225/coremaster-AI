@@ -151,8 +151,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
     const [showTdeeModal, setShowTdeeModal] = useState(false);
 
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const generateWorkoutPlan = async () => {
         setIsLoading(true);
         setError(null);
         setPlan(null);
@@ -166,10 +165,8 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
             setPlan(generatedPlan);
         } catch (err: any) {
             const errorMessage = err.toString().toLowerCase();
-            // Catch a broader range of potential API key / auth errors from the SDK
-            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("401") || errorMessage.includes("403")) {
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("401") || errorMessage.includes("403") || errorMessage.includes("requested entity was not found")) {
                 setApiKeyError(true);
-                console.error("Authentication/API Key Error:", err);
             } else {
                 setError(err.message || t('UNKNOWN_ERROR'));
             }
@@ -178,12 +175,19 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         }
     };
     
-    const handleSetApiKey = async () => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        generateWorkoutPlan();
+    };
+    
+    const handleSetApiKeyAndRetry = async () => {
         if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
             await (window as any).aistudio.openSelectKey();
-            // After setting the key, just remove the error.
-            // The user can now click the main "Generate Plan" button again.
             setApiKeyError(false);
+            // Automatically retry after a short delay to allow the new key to propagate
+            setTimeout(() => {
+                generateWorkoutPlan();
+            }, 500);
         }
     };
 
@@ -201,9 +205,10 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
             setNutritionPlan(generatedNutritionPlan);
         } catch (err: any) {
             const errorMessage = err.toString().toLowerCase();
-            if (errorMessage.includes("api key") || errorMessage.includes("permission denied")) {
-                 setApiKeyError(true);
-                 setNutritionError(null);
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("requested entity was not found")) {
+                 // For nutrition, just show the generic error and let user retry manually
+                 // since the main key error handler retries the workout plan.
+                 setNutritionError(t('API_KEY_MISSING_ERROR_DESC'));
             } else {
                 setNutritionError(err.message || t('NUTRITION_PLAN_ERROR'));
             }
@@ -273,7 +278,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                  <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
                     <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
                     <p className="text-sm mt-1">{t('API_KEY_MISSING_ERROR_DESC')}</p>
-                     <button onClick={handleSetApiKey} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                     <button onClick={handleSetApiKeyAndRetry} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
                         {t('SET_API_KEY_BUTTON')}
                     </button>
                 </div>

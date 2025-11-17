@@ -20,6 +20,7 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiKeyError, setApiKeyError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,12 +46,12 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
     if (!input.trim() || isLoading) return;
 
     setApiKeyError(false);
-
-    const userMessage: ChatMessage = { role: 'user', text: input };
-    setMessages(prev => [...prev, userMessage]);
+    setError(null);
     
     const currentInput = input;
-    setInput('');
+    const userMessage: ChatMessage = { role: 'user', text: currentInput };
+    setMessages(prev => [...prev, userMessage]);
+    
     setIsLoading(true);
     
     setMessages(prev => [...prev, { role: 'model', text: '' }]);
@@ -58,6 +59,9 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
     try {
       const stream = await getCompetitionPrepStream(messages, currentInput);
       
+      // Clear input only on successful API call
+      setInput('');
+
       for await (const chunk of stream) {
         const chunkText = chunk.text;
         setMessages(prev => {
@@ -72,17 +76,13 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
     } catch (err: any) {
       console.error(err);
       const errorMessage = err.toString().toLowerCase();
-       if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+       if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("requested entity was not found")) {
             setApiKeyError(true);
+      } else {
+        setError(t('AI_COACH_ERROR'));
       }
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage) {
-          lastMessage.text = t('AI_COACH_ERROR');
-        }
-        return newMessages;
-      });
+      // On error, remove placeholder messages. User's input remains in the input field.
+      setMessages(prev => prev.slice(0, -2));
     } finally {
       setIsLoading(false);
     }
@@ -117,12 +117,18 @@ export const CompetitionPrepCoach: React.FC<CompetitionPrepCoachProps> = ({ onCl
             ))}
             <div ref={messagesEndRef} />
         </div>
-        {apiKeyError && (
-             <div className="p-2 text-center bg-red-900/50 text-red-300 border-t border-slate-700">
-                 <p className="text-sm">{t('API_KEY_MISSING_ERROR_DESC')}</p>
-                 <button onClick={handleSetApiKey} className="mt-2 px-3 py-1 bg-cyan-600 text-white text-sm font-semibold rounded-md hover:bg-cyan-700">
-                    {t('SET_API_KEY_BUTTON')}
-                </button>
+        {(apiKeyError || error) && (
+            <div className="p-2 text-center bg-red-900/50 text-red-300 border-t border-slate-700">
+                {apiKeyError && (
+                    <>
+                        <p className="text-sm font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
+                        <p className="text-sm">{t('API_KEY_MISSING_ERROR_DESC')}</p>
+                        <button onClick={handleSetApiKey} className="mt-2 px-3 py-1 bg-cyan-600 text-white text-sm font-semibold rounded-md hover:bg-cyan-700">
+                           {t('SET_API_KEY_BUTTON')}
+                       </button>
+                    </>
+                )}
+                {error && <p className="text-sm">{error}</p>}
             </div>
         )}
         <form onSubmit={handleSubmit} className="p-2 border-t border-slate-700 flex items-center space-x-2">

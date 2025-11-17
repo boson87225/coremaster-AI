@@ -50,7 +50,7 @@ const AiInsight: React.FC = () => {
             sessionStorage.setItem('coreMasterTip', newTip);
         } catch (err: any) {
             const errorMessage = err.toString().toLowerCase();
-            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("requested entity was not found")) {
                 setApiKeyError(true);
             } else {
                 setError(t('AI_INSIGHT_ERROR'));
@@ -74,10 +74,13 @@ const AiInsight: React.FC = () => {
         generateTip();
     };
 
-    const handleSetApiKey = async () => {
+    const handleSetApiKeyAndRetry = async () => {
         if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
             await (window as any).aistudio.openSelectKey();
             setApiKeyError(false);
+            setTimeout(() => {
+                generateTip();
+            }, 500);
         }
     };
 
@@ -99,7 +102,7 @@ const AiInsight: React.FC = () => {
                  <div className="py-4 text-center bg-red-900/50 text-red-300">
                     <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
                     <p className="text-sm mt-1">{t('AI_INSIGHT_ERROR')}</p>
-                     <button onClick={handleSetApiKey} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                     <button onClick={handleSetApiKeyAndRetry} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
                         {t('SET_API_KEY_BUTTON')}
                     </button>
                 </div>

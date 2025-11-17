@@ -74,21 +74,22 @@ export const AiCoachPage: React.FC = () => {
 
     setError(null);
     setApiKeyError(false);
-
-    const userMessage: ChatMessage = { role: 'user', text: input };
-    setMessages(prev => [...prev, userMessage]);
     
     const currentInput = input;
-    setInput('');
+    const userMessage: ChatMessage = { role: 'user', text: currentInput };
+    setMessages(prev => [...prev, userMessage]);
+    
     setIsLoading(true);
     
     // Add a placeholder for the model's response
     setMessages(prev => [...prev, { role: 'model', text: '' }]);
 
     try {
-      // Pass the history BEFORE the new user message. `sendMessage` will add the new message to the chat history.
       const stream = await getAiCoachResponseStream(messages, currentInput);
       
+      // Clear input only on successful API call
+      setInput(''); 
+
       for await (const chunk of stream) {
         const chunkText = chunk.text;
         setMessages(prev => {
@@ -102,13 +103,13 @@ export const AiCoachPage: React.FC = () => {
       }
     } catch (err: any) {
       const errorMessage = err.toString().toLowerCase();
-      if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+      if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("requested entity was not found")) {
           setApiKeyError(true);
       } else {
         setError(t('AI_COACH_ERROR'));
       }
       console.error(err);
-      // Remove the user message and the placeholder on error
+      // Remove the user message and the placeholder on error, user's text remains in input box
       setMessages(prev => prev.slice(0, -2)); 
     } finally {
       setIsLoading(false);

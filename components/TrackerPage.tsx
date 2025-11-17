@@ -67,29 +67,27 @@ const FoodTracker: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
   const [apiKeyError, setApiKeyError] = useState(false);
+  const [imageForRetry, setImageForRetry] = useState<string | null>(null);
 
   const totalCalories = useMemo(() => {
     return foodLog.reduce((sum, item) => sum + item.calories, 0);
   }, [foodLog]);
-
-  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setSelectedImage(URL.createObjectURL(file));
-    setRecognizedFood(null);
-    setError(null);
+  
+  const doRecognition = async (base64Image: string) => {
     setIsLoading(true);
+    setError(null);
+    setRecognizedFood(null);
     setApiKeyError(false);
 
     try {
-      const base64Image = await fileToBase64(file);
       const results = await recognizeFoodInImage(base64Image);
       setRecognizedFood(results);
+      setImageForRetry(null); // Clear on success
     } catch (err: any) {
         const errorMessage = err.toString().toLowerCase();
-        if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication")) {
+        if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("requested entity was not found")) {
             setApiKeyError(true);
+            setImageForRetry(base64Image); // Save for retry
         } else {
             const displayMessage = err instanceof Error ? err.message : 'An unknown error occurred';
             setError(t('RECOGNITION_FAILED', { message: displayMessage }));
@@ -97,6 +95,15 @@ const FoodTracker: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setSelectedImage(URL.createObjectURL(file));
+    const base64Image = await fileToBase64(file);
+    doRecognition(base64Image);
   };
   
   const handleAddFoodToLog = (food: Omit<FoodLogItem, 'id' | 'timestamp'>) => {
@@ -114,10 +121,15 @@ const FoodTracker: React.FC = () => {
       setSelectedImage(null);
   }
   
-  const handleSetApiKey = async () => {
+  const handleSetApiKeyAndRetry = async () => {
       if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
           await (window as any).aistudio.openSelectKey();
           setApiKeyError(false);
+          if (imageForRetry) {
+               setTimeout(() => {
+                  doRecognition(imageForRetry);
+              }, 500);
+          }
       }
   };
 
@@ -164,7 +176,7 @@ const FoodTracker: React.FC = () => {
          <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
             <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
             <p className="text-sm mt-1">{t('API_KEY_MISSING_ERROR_DESC')}</p>
-             <button onClick={handleSetApiKey} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+             <button onClick={handleSetApiKeyAndRetry} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
                 {t('SET_API_KEY_BUTTON')}
             </button>
         </div>
