@@ -165,6 +165,11 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   AI_COACH_PLACEHOLDER: { en: 'Ask a fitness question...', zh: '詢問健身問題...' },
   AI_COACH_ERROR: { en: 'Sorry, I encountered an error. Please try again.', zh: '抱歉，我遇到一個錯誤。請再試一次。' },
 
+  // API Key Error
+  API_KEY_MISSING_ERROR_TITLE: { en: 'API Key Not Configured', zh: 'API 金鑰未設定' },
+  API_KEY_MISSING_ERROR_DESC: { en: 'Please set your Gemini API key to use AI features.', zh: '請設定您的 Gemini API 金鑰以使用 AI 功能。' },
+  SET_API_KEY_BUTTON: { en: 'Set API Key', zh: '設定 API 金鑰' },
+
   // AI Planner Page
   AI_PLANNER_TITLE: { en: 'AI Smart Workout Planner', zh: 'AI 智慧課表產生器' },
   PRIMARY_GOAL: { en: 'Primary Goal', zh: '主要目標' },

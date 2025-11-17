@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from 'react';
 import { ClipboardList, Loader2, Sparkles, Play, UtensilsCrossed, X, CheckCircle } from './icons';
 import { getAiWorkoutPlan, getAiNutritionPlan } from '../services/geminiService';
@@ -140,6 +139,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [plan, setPlan] = useState<WorkoutPlan | null>(null);
+    const [apiKeyError, setApiKeyError] = useState(false);
     const { t } = useTranslation();
 
     const { setActivePlan } = useContext(PlanContext);
@@ -156,7 +156,8 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         setIsLoading(true);
         setError(null);
         setPlan(null);
-        setNutritionPlan(null); // Reset nutrition plan when creating a new workout plan
+        setNutritionPlan(null);
+        setApiKeyError(false);
 
         try {
             const translatedGoal = t(`GOAL_${goal.toUpperCase()}`);
@@ -164,12 +165,25 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
             const generatedPlan = await getAiWorkoutPlan(translatedGoal, days, translatedExperience);
             setPlan(generatedPlan);
         } catch (err: any) {
-            setError(err.message || t('UNKNOWN_ERROR'));
+            if (err.message && err.message.includes("API Key is not configured")) {
+                setApiKeyError(true);
+            } else {
+                setError(err.message || t('UNKNOWN_ERROR'));
+            }
         } finally {
             setIsLoading(false);
         }
     };
     
+    const handleSetApiKeyAndRetry = async () => {
+        if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
+            await (window as any).aistudio.openSelectKey();
+            // After user action, simulate form submission to retry
+            const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+            handleSubmit(fakeEvent);
+        }
+    };
+
     const handleGenerateNutrition = async (tdee: number) => {
         if (!plan || !tdee) return;
         setShowTdeeModal(false);
@@ -200,6 +214,7 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         setError(null);
         setNutritionPlan(null);
         setNutritionError(null);
+        setApiKeyError(false);
     }
 
     return (
@@ -244,7 +259,17 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                 </div>
             )}
             
-            {error && (
+            {apiKeyError && (
+                 <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
+                    <p className="font-bold">{t('API_KEY_MISSING_ERROR_TITLE')}</p>
+                    <p className="text-sm mt-1">{t('API_KEY_MISSING_ERROR_DESC')}</p>
+                     <button onClick={handleSetApiKeyAndRetry} className="mt-4 px-4 py-2 bg-cyan-600 text-white font-semibold rounded-md hover:bg-cyan-700">
+                        {t('SET_API_KEY_BUTTON')}
+                    </button>
+                </div>
+            )}
+
+            {error && !apiKeyError && (
                  <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
                     <p className="font-bold">{t('ERROR_TITLE')}</p>
                     <p className="text-sm">{error}</p>
