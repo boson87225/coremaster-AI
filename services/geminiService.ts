@@ -11,17 +11,13 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
-let ai: GoogleGenAI | null = null;
-
-// Lazy-initialize the Gemini client to prevent app crash on startup if API key is missing.
+// Always create a new client to pick up the latest API key from the environment.
+// This is crucial for the "Set API Key" functionality to work correctly.
 const getAiClient = (): GoogleGenAI => {
-  if (!ai) {
-    if (!process.env.API_KEY) {
-      throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable to use AI features.");
-    }
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  if (!process.env.API_KEY) {
+    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable to use AI features.");
   }
-  return ai;
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 
