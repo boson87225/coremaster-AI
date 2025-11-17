@@ -284,4 +284,6 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   TTS_NEXT_EXERCISE: { en: "Next up, {exercise}", zh: '下一個動作， {exercise}' },
   TTS_END_WORKOUT: { en: "Workout complete, you were amazing! Recover well and I'll see you next time.", zh: '訓練結束，你太棒了！好好恢復，期待下次訓練' },
   TTS_START_REST: { en: "Great job! Rest for {duration} seconds.", zh: '做得好！休息 {duration} 秒' },
+  TTS_ERROR_TITLE: { en: 'Audio Cue Failed', zh: '語音提示失敗' },
+  TTS_ERROR_DESC: { en: 'Please set your API key to enable audio.', zh: '請設定 API 金鑰以啟用語音。' },
 };

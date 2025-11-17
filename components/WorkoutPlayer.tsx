@@ -6,7 +6,7 @@ import { formatTime } from '../utils/time';
 import { useTranslation } from '../context/LanguageContext';
 
 export const WorkoutPlayer: React.FC = () => {
-  const { workoutState, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest } = useContext(WorkoutContext);
+  const { workoutState, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest, apiKeyError, handleSetApiKey } = useContext(WorkoutContext);
   const { t } = useTranslation();
 
   const { status, currentPlan, currentDayIndex, currentExerciseIndex, isExpanded, restTimer } = workoutState;
@@ -31,30 +31,49 @@ export const WorkoutPlayer: React.FC = () => {
       <div className={`max-w-2xl mx-auto bg-slate-900/80 backdrop-blur-lg border-t border-slate-700 rounded-t-2xl shadow-2xl transition-all duration-300 ease-in-out ${isExpanded ? 'mb-0' : 'mb-[-120px] md:mb-[-100px]'}`}>
         {/* Main Control Bar */}
         <div className="flex items-center p-3">
-          <div className="flex-grow">
-            <p className="text-sm font-light text-slate-400">
-                {status === 'resting' ? t('PLAYER_STATUS_RESTING') : currentDay.title}
-            </p>
-            <p className="text-lg font-bold truncate">
-                {status === 'resting' ? `${t('PLAYER_NEXT_EXERCISE')}: ${currentDay.exercises[currentExerciseIndex + 1]?.name || t('PLAYER_WORKOUT_COMPLETE')}` : currentExercise.name}
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            {status !== 'resting' && (
-                <button onClick={handlePrimaryAction} className="p-3 bg-cyan-600 rounded-full hover:bg-cyan-500 transition" title={status === 'playing' ? t('PLAYER_START_REST') : t('RESUME_BUTTON')}>
-                    {status === 'playing' ? <Clock size={24} /> : <Play size={24} />}
+          {apiKeyError ? (
+            <>
+              <div className="flex-grow text-red-400">
+                  <p className="font-bold text-sm">{t('TTS_ERROR_TITLE')}</p>
+                  <p className="text-xs">{t('TTS_ERROR_DESC')}</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                  <button onClick={handleSetApiKey} className="px-4 py-2 bg-cyan-600 rounded-full text-sm font-semibold">
+                      {t('SET_API_KEY_BUTTON')}
+                  </button>
+                  <button onClick={endWorkout} className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition" title={t('PLAYER_END_WORKOUT')}>
+                      <X size={24} />
+                  </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex-grow">
+                <p className="text-sm font-light text-slate-400">
+                    {status === 'resting' ? t('PLAYER_STATUS_RESTING') : currentDay.title}
+                </p>
+                <p className="text-lg font-bold truncate">
+                    {status === 'resting' ? `${t('PLAYER_NEXT_EXERCISE')}: ${currentDay.exercises[currentExerciseIndex + 1]?.name || t('PLAYER_WORKOUT_COMPLETE')}` : currentExercise.name}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                {status !== 'resting' && (
+                    <button onClick={handlePrimaryAction} className="p-3 bg-cyan-600 rounded-full hover:bg-cyan-500 transition" title={status === 'playing' ? t('PLAYER_START_REST') : t('RESUME_BUTTON')}>
+                        {status === 'playing' ? <Clock size={24} /> : <Play size={24} />}
+                    </button>
+                )}
+                 {status === 'resting' && (
+                    <div className="text-3xl font-mono p-2 text-cyan-300">{formatTime(restTimer)}</div>
+                )}
+                <button onClick={endWorkout} className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition" title={t('PLAYER_END_WORKOUT')}>
+                  <X size={24} />
                 </button>
-            )}
-             {status === 'resting' && (
-                <div className="text-3xl font-mono p-2 text-cyan-300">{formatTime(restTimer)}</div>
-            )}
-            <button onClick={endWorkout} className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition" title={t('PLAYER_END_WORKOUT')}>
-              <X size={24} />
-            </button>
-            <button onClick={toggleExpand} className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition" title={isExpanded ? t('PLAYER_COLLAPSE') : t('PLAYER_EXPAND')}>
-              {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
-            </button>
-          </div>
+                <button onClick={toggleExpand} className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition" title={isExpanded ? t('PLAYER_COLLAPSE') : t('PLAYER_EXPAND')}>
+                  {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
+                </button>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Expanded Details */}

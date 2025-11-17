@@ -39,6 +39,6 @@ export const textToSpeech = async (text: string): Promise<string | null> => {
     return null;
   } catch (error) {
     console.error("Text-to-speech service error:", error);
-    return null;
+    throw error;
   }
 };

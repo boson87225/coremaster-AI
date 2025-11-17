@@ -58,6 +58,8 @@ export interface WorkoutContextType {
   endWorkout: () => void;
   toggleExpand: () => void;
   startRest: () => void;
+  apiKeyError: boolean;
+  handleSetApiKey: () => Promise<void>;
 }
 
 // Added for Food Tracker

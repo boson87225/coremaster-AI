@@ -22,6 +22,8 @@ export const WorkoutContext = createContext<WorkoutContextType>({
   endWorkout: () => {},
   toggleExpand: () => {},
   startRest: () => {},
+  apiKeyError: false,
+  handleSetApiKey: async () => {},
 });
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -29,6 +31,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
   const { t } = useTranslation();
+
+  const [apiKeyError, setApiKeyError] = useState(false);
+  const [lastFailedText, setLastFailedText] = useState<string | null>(null);
+
 
   // Lazily initialize and get the AudioContext
   const getAudioContext = () => {
@@ -64,29 +70,40 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             return;
         }
     }
+    
+    setApiKeyError(false);
 
-    const base64Audio = await textToSpeech(text);
-    if (base64Audio) {
-        try {
-            const audioBuffer = await decodeAudioData(
-                decode(base64Audio),
-                context,
-                24000, 
-                1
-            );
-            const source = context.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(context.destination);
-            
-            const now = context.currentTime;
-            const startTime = Math.max(now, nextStartTimeRef.current);
-            source.start(startTime);
-            nextStartTimeRef.current = startTime + audioBuffer.duration;
-        } catch (error) {
-            console.error("Error playing audio:", error);
+    try {
+        const base64Audio = await textToSpeech(text);
+        if (base64Audio) {
+            try {
+                const audioBuffer = await decodeAudioData(
+                    decode(base64Audio),
+                    context,
+                    24000, 
+                    1
+                );
+                const source = context.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(context.destination);
+                
+                const now = context.currentTime;
+                const startTime = Math.max(now, nextStartTimeRef.current);
+                source.start(startTime);
+                nextStartTimeRef.current = startTime + audioBuffer.duration;
+            } catch (error) {
+                console.error("Error playing audio:", error);
+            }
+        }
+    } catch (error: any) {
+        console.error("TTS call failed", error);
+        const errorMessage = error.toString().toLowerCase();
+        if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("requested entity was not found")) {
+            setApiKeyError(true);
+            setLastFailedText(text);
         }
     }
-  }, []);
+  }, [t]);
 
   const nextExercise = useCallback(() => {
     setWorkoutState(prev => {
@@ -127,7 +144,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     return () => clearInterval(timer);
-  }, [workoutState.status, workoutState.restTimer > 0, speak]);
+  }, [workoutState.status, workoutState.restTimer, speak]);
 
   // Effect to transition to the next exercise when the timer finishes
   useEffect(() => {
@@ -185,8 +202,21 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, [speak, t]);
 
+  const handleSetApiKey = async () => {
+    if ((window as any).aistudio?.openSelectKey) {
+        await (window as any).aistudio.openSelectKey();
+        setApiKeyError(false);
+        if (lastFailedText) {
+            setTimeout(() => {
+                speak(lastFailedText);
+                setLastFailedText(null);
+            }, 500);
+        }
+    }
+  };
+
   return (
-    <WorkoutContext.Provider value={{ workoutState, startWorkout, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest }}>
+    <WorkoutContext.Provider value={{ workoutState, startWorkout, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest, apiKeyError, handleSetApiKey }}>
       {children}
     </WorkoutContext.Provider>
   );
