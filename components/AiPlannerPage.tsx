@@ -135,7 +135,7 @@ const NutritionPlanDisplay: React.FC<{ plan: NutritionPlan }> = ({ plan }) => {
 export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
     const [goal, setGoal] = useState<UserProfile['goal']>('MUSCLE_GAIN');
     const [days, setDays] = useState(4);
-    const [experience, setExperience] = useState('中階');
+    const [experience, setExperience] = useState('INTERMEDIATE');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [plan, setPlan] = useState<WorkoutPlan | null>(null);
@@ -159,9 +159,9 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         setApiKeyError(false);
 
         try {
-            const translatedGoal = t(`GOAL_${goal.toUpperCase()}`);
-            const translatedExperience = t(`EXP_${experience.toUpperCase()}`);
-            const generatedPlan = await getAiWorkoutPlan(translatedGoal, days, translatedExperience);
+            // Pass the English keys ('MUSCLE_GAIN', 'INTERMEDIATE', etc.) to the AI
+            // for more consistent and reliable plan generation across languages.
+            const generatedPlan = await getAiWorkoutPlan(goal, days, experience);
             setPlan(generatedPlan);
         } catch (err: any) {
             const errorMessage = err.toString().toLowerCase();
@@ -251,9 +251,9 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                      <div>
                         <label htmlFor="experience" className="block text-sm font-medium text-slate-300">{t('TRAINING_EXPERIENCE')}</label>
                         <select id="experience" value={experience} onChange={e => setExperience(e.target.value)} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500">
-                            <option value="新手">{t('EXP_BEGINNER')}</option>
-                            <option value="中階">{t('EXP_INTERMEDIATE')}</option>
-                            <option value="進階">{t('EXP_ADVANCED')}</option>
+                            <option value="BEGINNER">{t('EXP_BEGINNER')}</option>
+                            <option value="INTERMEDIATE">{t('EXP_INTERMEDIATE')}</option>
+                            <option value="ADVANCED">{t('EXP_ADVANCED')}</option>
                         </select>
                     </div>
                     <div>
