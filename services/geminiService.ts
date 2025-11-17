@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, type Chat } from "@google/genai";
 import { 
     AI_COACH_SYSTEM_INSTRUCTION, 
@@ -14,9 +13,8 @@ import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "..
 // Always create a new client to pick up the latest API key from the environment.
 // This is crucial for the "Set API Key" functionality to work correctly.
 const getAiClient = (): GoogleGenAI => {
-  if (!process.env.API_KEY) {
-    throw new Error("Gemini API Key is not configured. Please set the API_KEY environment variable to use AI features.");
-  }
+  // Let the SDK handle the missing API key. This will provide more specific error
+  // messages when the API call is made, instead of throwing a generic error here.
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 

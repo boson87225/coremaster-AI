@@ -165,8 +165,11 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
             const generatedPlan = await getAiWorkoutPlan(translatedGoal, days, translatedExperience);
             setPlan(generatedPlan);
         } catch (err: any) {
-            if (err.message && err.message.includes("API Key is not configured")) {
+            const errorMessage = err.toString().toLowerCase();
+            // Catch a broader range of potential API key / auth errors from the SDK
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("401") || errorMessage.includes("403")) {
                 setApiKeyError(true);
+                console.error("Authentication/API Key Error:", err);
             } else {
                 setError(err.message || t('UNKNOWN_ERROR'));
             }
@@ -196,7 +199,13 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
             const generatedNutritionPlan = await getAiNutritionPlan(translatedGoal, tdee, plan);
             setNutritionPlan(generatedNutritionPlan);
         } catch (err: any) {
-            setNutritionError(err.message || t('NUTRITION_PLAN_ERROR'));
+            const errorMessage = err.toString().toLowerCase();
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied")) {
+                 setApiKeyError(true);
+                 setNutritionError(null);
+            } else {
+                setNutritionError(err.message || t('NUTRITION_PLAN_ERROR'));
+            }
         } finally {
             setIsNutritionLoading(false);
         }
