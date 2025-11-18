@@ -23,8 +23,12 @@ const getAiClient = (): GoogleGenAI => {
   // Let the SDK handle the missing API key. This will provide more specific error
   // messages when the API call is made, instead of throwing a generic error here.
   
-  // Use the hardcoded key if it exists, otherwise fall back to environment variable.
-  const apiKey = HARDCODED_API_KEY || process.env.API_KEY;
+  // Use the hardcoded key ONLY if it has been changed from the placeholder.
+  // Otherwise, default to the environment variable to avoid sending an invalid key.
+  const apiKey = (HARDCODED_API_KEY && HARDCODED_API_KEY !== "在這裡貼上您的 Gemini API 金鑰")
+    ? HARDCODED_API_KEY
+    : process.env.API_KEY;
+    
   return new GoogleGenAI({ apiKey: apiKey });
 };
 
