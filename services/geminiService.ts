@@ -10,12 +10,22 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
+// --- START OF MODIFICATION ---
+// WARNING: This is NOT recommended. Hardcoding keys is a security risk.
+// Use environment variables for production.
+const HARDCODED_API_KEY = "在這裡貼上您的 Gemini API 金鑰";
+// --- END OF MODIFICATION ---
+
+
 // Always create a new client to pick up the latest API key from the environment.
 // This is crucial for the "Set API Key" functionality to work correctly.
 const getAiClient = (): GoogleGenAI => {
   // Let the SDK handle the missing API key. This will provide more specific error
   // messages when the API call is made, instead of throwing a generic error here.
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  // Use the hardcoded key if it exists, otherwise fall back to environment variable.
+  const apiKey = HARDCODED_API_KEY || process.env.API_KEY;
+  return new GoogleGenAI({ apiKey: apiKey });
 };
 
 
