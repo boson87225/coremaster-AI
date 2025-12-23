@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, type Chat } from "@google/genai";
 import { 
     AI_COACH_SYSTEM_INSTRUCTION, 
@@ -10,28 +11,10 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
-// --- START OF MODIFICATION ---
-// WARNING: This is NOT recommended. Hardcoding keys is a security risk.
-// Use environment variables for production.
-const HARDCODED_API_KEY = "在這裡貼上您的 Gemini API 金鑰";
-// --- END OF MODIFICATION ---
-
-
-// Always create a new client to pick up the latest API key from the environment.
-// This is crucial for the "Set API Key" functionality to work correctly.
+// Helper to get the API client.
 const getAiClient = (): GoogleGenAI => {
-  // Let the SDK handle the missing API key. This will provide more specific error
-  // messages when the API call is made, instead of throwing a generic error here.
-  
-  // Use the hardcoded key ONLY if it has been changed from the placeholder.
-  // Otherwise, default to the environment variable to avoid sending an invalid key.
-  const apiKey = (HARDCODED_API_KEY && HARDCODED_API_KEY !== "在這裡貼上您的 Gemini API 金鑰")
-    ? HARDCODED_API_KEY
-    : process.env.API_KEY;
-    
-  return new GoogleGenAI({ apiKey: apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
-
 
 // Convert our app's message format to the format required by the Gemini API
 const buildGeminiHistory = (messages: ChatMessage[]) => {
@@ -44,7 +27,7 @@ const buildGeminiHistory = (messages: ChatMessage[]) => {
 export const getAiCoachResponseStream = async (history: ChatMessage[], message: string) => {
   const client = getAiClient();
   const chat: Chat = client.chats.create({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
     history: buildGeminiHistory(history),
     config: {
       systemInstruction: AI_COACH_SYSTEM_INSTRUCTION,
@@ -60,7 +43,7 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
   const prompt = `Generate a ${days}-day workout plan for a user with the goal of '${goal}' and an experience level of '${experience}'.`;
   
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-pro-preview', // Complex reasoning task
     contents: prompt,
     config: {
       systemInstruction: AI_PLANNER_SYSTEM_INSTRUCTION,
@@ -71,9 +54,7 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
 
   const text = response.text;
   try {
-    // The response is a string that needs to be parsed into a JSON object.
-    const plan = JSON.parse(text);
-    return plan;
+    return JSON.parse(text);
   } catch (e) {
     console.error("Failed to parse AI workout plan JSON:", text, e);
     throw new Error("The AI returned an invalid plan format. Please try again.");
@@ -83,7 +64,7 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
 export const getCompetitionPrepStream = async (history: ChatMessage[], message: string) => {
   const client = getAiClient();
   const chat: Chat = client.chats.create({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
     history: buildGeminiHistory(history),
     config: {
       systemInstruction: COMPETITION_PREP_SYSTEM_INSTRUCTION,
@@ -99,7 +80,7 @@ export const getAiNutritionPlan = async (goal: string, tdee: number, workoutPlan
   const prompt = `My TDEE is ${tdee} calories, my goal is '${goal}', and here is my workout plan for today: ${JSON.stringify(workoutPlan, null, 2)}`;
   
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-pro-preview', // Complex reasoning task
     contents: prompt,
     config: {
       systemInstruction: AI_NUTRITION_SYSTEM_INSTRUCTION,
@@ -110,18 +91,16 @@ export const getAiNutritionPlan = async (goal: string, tdee: number, workoutPlan
 
   const text = response.text;
   try {
-    const plan = JSON.parse(text);
-    return plan;
+    return JSON.parse(text);
   } catch (e) {
     console.error("Failed to parse AI nutrition plan JSON:", text, e);
     throw new Error("The AI returned an invalid nutrition plan format. Please try again.");
   }
 };
 
-
 export const recognizeFoodInImage = async (base64Image: string): Promise<RecognizedFood[]> => {
     const client = getAiClient();
-    const prompt = `Analyze the food items in this image. Estimate the nutrition facts for each item (calories, protein, carbohydrates, and fat). Provide your answer as a JSON object containing a single key "foods", which is an array of objects. Each object should have "name" (string), "calories" (number), "protein" (number, in grams), "carbs" (number, in grams), and "fat" (number, in grams). If you cannot identify any food, return an empty array.`;
+    const prompt = `Analyze the food items in this image. Estimate the nutrition facts for each item (calories, protein, carbohydrates, and fat). Provide your answer as a JSON object containing a single key "foods", which is an array of objects.`;
 
     const imagePart = {
         inlineData: {
@@ -130,12 +109,10 @@ export const recognizeFoodInImage = async (base64Image: string): Promise<Recogni
         },
     };
 
-    const textPart = {
-        text: prompt,
-    };
+    const textPart = { text: prompt };
 
     const response = await client.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: { parts: [textPart, imagePart] },
         config: {
             responseMimeType: "application/json",
@@ -161,22 +138,26 @@ export const recognizeFoodInImage = async (base64Image: string): Promise<Recogni
         }
     });
     
-    const responseText = response.text;
     try {
-        const parsed = JSON.parse(responseText);
+        const parsed = JSON.parse(response.text);
         return parsed.foods || [];
     } catch(e) {
-        console.error("Failed to parse food recognition JSON:", responseText, e);
+        console.error("Failed to parse food recognition JSON:", response.text, e);
         throw new Error("AI 無法分析此圖片，請嘗試另一張照片。");
     }
 };
 
-export const getAiInsightTip = async (data: object): Promise<string> => {
+export const getAiInsightTip = async (data: object, language: 'en' | 'zh'): Promise<string> => {
   const client = getAiClient();
-  const prompt = `Here is the user's current status. Please provide a short, actionable tip based on this information:\n${JSON.stringify(data, null, 2)}`;
+  const langText = language === 'zh' ? 'Traditional Chinese (繁體中文)' : 'English';
+  const prompt = `Here is the user's current status data. Please provide a short, actionable tip based on this information. 
+  IMPORTANT: You must respond ONLY in ${langText}.
+  
+  Data:
+  ${JSON.stringify(data, null, 2)}`;
 
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
     contents: prompt,
     config: {
       systemInstruction: AI_INSIGHT_SYSTEM_INSTRUCTION,

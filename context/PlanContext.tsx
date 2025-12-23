@@ -1,13 +1,15 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import type { WorkoutPlan, NutritionPlan, FoodLogItem, PlanContextType, WeightLogItem, UserProfile } from '../types';
 
-const PLAN_STORAGE_KEY = 'coreMasterActivePlan_v2';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
+import type { WorkoutPlan, NutritionPlan, FoodLogItem, PlanContextType, WeightLogItem, UserProfile, ActivityLogItem } from '../types';
+
+const PLAN_STORAGE_KEY = 'coreMasterActivePlan_v3';
 
 const initialContextState: PlanContextType = {
   activeWorkoutPlan: null,
   activeNutritionPlan: null,
   foodLog: [],
   weightLog: [],
+  activityLog: [],
   userProfile: null,
   isLoaded: false,
   setActivePlan: () => {},
@@ -16,6 +18,7 @@ const initialContextState: PlanContextType = {
   removeFoodLogItem: () => {},
   addWeightLogItem: () => {},
   removeWeightLogItem: () => {},
+  addActivityLogItem: () => {},
   setUserProfile: () => {},
   clearPlan: () => {},
 };
@@ -27,6 +30,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeNutritionPlan, setActiveNutritionPlanState] = useState<NutritionPlan | null>(null);
   const [foodLog, setFoodLog] = useState<FoodLogItem[]>([]);
   const [weightLog, setWeightLog] = useState<WeightLogItem[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLogItem[]>([]);
   const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -34,12 +38,13 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const storedData = localStorage.getItem(PLAN_STORAGE_KEY);
       if (storedData) {
-        const { workoutPlan, nutritionPlan, log, weight, profile } = JSON.parse(storedData);
+        const { workoutPlan, nutritionPlan, log, weight, profile, activity } = JSON.parse(storedData);
         if (workoutPlan) setActiveWorkoutPlanState(workoutPlan);
         if (nutritionPlan) setActiveNutritionPlanState(nutritionPlan);
         if (log) setFoodLog(log.map((item: any) => ({...item, timestamp: new Date(item.timestamp)})));
         if (weight) setWeightLog(weight);
         if (profile) setUserProfileState(profile);
+        if (activity) setActivityLog(activity.map((item: any) => ({...item, timestamp: new Date(item.timestamp)})));
       }
     } catch (error) {
       console.error("Failed to load plan from localStorage", error);
@@ -50,41 +55,33 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!isLoaded) return;
     try {
-      const today = new Date().toDateString();
-      const todaysLog = foodLog.filter(item => new Date(item.timestamp).toDateString() === today);
-      
       const dataToStore = {
         workoutPlan: activeWorkoutPlan,
         nutritionPlan: activeNutritionPlan,
-        log: todaysLog,
+        log: foodLog,
         weight: weightLog,
         profile: userProfile,
+        activity: activityLog,
       };
       localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(dataToStore));
     } catch (error) {
       console.error("Failed to save plan to localStorage", error);
     }
-  }, [activeWorkoutPlan, activeNutritionPlan, foodLog, weightLog, userProfile, isLoaded]);
+  }, [activeWorkoutPlan, activeNutritionPlan, foodLog, weightLog, userProfile, activityLog, isLoaded]);
 
   const setActivePlan = useCallback((workoutPlan: WorkoutPlan, nutritionPlan: NutritionPlan | null) => {
     setActiveWorkoutPlanState(workoutPlan);
     setActiveNutritionPlanState(nutritionPlan);
-    setFoodLog([]); // Reset food log when a new plan is set
   }, []);
 
   const setActiveWorkoutPlan = useCallback((workoutPlan: WorkoutPlan) => {
     setActiveWorkoutPlanState(workoutPlan);
-    setActiveNutritionPlanState(null); // Clear nutrition plan if only workout is set
-    setFoodLog([]);
+    setActiveNutritionPlanState(null);
   }, []);
 
   const addFoodLogItem = useCallback((item: Omit<FoodLogItem, 'id' | 'timestamp'>) => {
-      const newLogItem: FoodLogItem = {
-          ...item,
-          id: crypto.randomUUID(),
-          timestamp: new Date(),
-      };
-    setFoodLog(prevLog => [newLogItem, ...prevLog]);
+      const newLogItem: FoodLogItem = { ...item, id: crypto.randomUUID(), timestamp: new Date() };
+      setFoodLog(prevLog => [newLogItem, ...prevLog]);
   }, []);
   
   const removeFoodLogItem = useCallback((id: string) => {
@@ -94,14 +91,11 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addWeightLogItem = useCallback((item: WeightLogItem) => {
     setWeightLog(prevLog => {
         const existingEntryIndex = prevLog.findIndex(entry => entry.date === item.date);
-
         if (existingEntryIndex > -1) {
-            // Update the entry for the given date
             const updatedLog = [...prevLog];
             updatedLog[existingEntryIndex] = item;
             return updatedLog.sort((a, b) => b.date.localeCompare(a.date));
         } else {
-            // Add new entry
             return [...prevLog, item].sort((a, b) => b.date.localeCompare(a.date));
         }
     });
@@ -109,6 +103,11 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removeWeightLogItem = useCallback((date: string) => {
     setWeightLog(prevLog => prevLog.filter(item => item.date !== date));
+  }, []);
+
+  const addActivityLogItem = useCallback((item: Omit<ActivityLogItem, 'id' | 'timestamp'>) => {
+    const newActivity: ActivityLogItem = { ...item, id: crypto.randomUUID(), timestamp: new Date() };
+    setActivityLog(prev => [newActivity, ...prev].slice(0, 50)); // Keep last 50
   }, []);
 
   const setUserProfile = useCallback((profile: UserProfile) => {
@@ -120,7 +119,8 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveNutritionPlanState(null);
     setFoodLog([]);
     setWeightLog([]);
-    setUserProfileState(null); // Also clear user profile on full reset
+    setActivityLog([]);
+    setUserProfileState(null);
     localStorage.removeItem(PLAN_STORAGE_KEY);
   }, []);
 
@@ -129,6 +129,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     activeNutritionPlan,
     foodLog,
     weightLog,
+    activityLog,
     userProfile,
     isLoaded,
     setActivePlan,
@@ -137,6 +138,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeFoodLogItem,
     addWeightLogItem,
     removeWeightLogItem,
+    addActivityLogItem,
     setUserProfile,
     clearPlan,
   };

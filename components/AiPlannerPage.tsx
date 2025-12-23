@@ -1,77 +1,15 @@
-import React, { useState, useContext } from 'react';
-import { ClipboardList, Loader2, Sparkles, Play, UtensilsCrossed, X, CheckCircle } from './icons';
+
+import React, { useState, useContext, useEffect } from 'react';
+import { ClipboardList, Loader2, Sparkles, UtensilsCrossed, X, CheckCircle, WifiOff } from './icons';
 import { getAiWorkoutPlan, getAiNutritionPlan } from '../services/geminiService';
-import type { WorkoutPlan, WorkoutDay, WorkoutExercise, NutritionPlan, Meal, Page, UserProfile } from '../types';
-import { WorkoutContext } from '../context/WorkoutContext';
+import type { WorkoutPlan, NutritionPlan, Meal, Page, UserProfile } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { TdeeCalculator } from './TdeeCalculator';
+import { WorkoutPlanCard } from './WorkoutPlanCard';
 
 interface AiPlannerPageProps {
     setPage: (page: Page) => void;
-}
-
-const PlanDisplay: React.FC<{ 
-    plan: WorkoutPlan;
-    nutritionPlan: NutritionPlan | null;
-    onSetPlan: () => void;
-}> = ({ plan, nutritionPlan, onSetPlan }) => {
-    const { startWorkout } = useContext(WorkoutContext);
-    const { t } = useTranslation();
-
-    return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="text-center p-4 bg-slate-700/50 rounded-lg">
-                <h3 className="text-2xl font-bold text-cyan-300">{plan.planTitle}</h3>
-                <p className="mt-2 text-slate-400 max-w-prose mx-auto">{plan.planSummary}</p>
-            </div>
-
-            <button
-                onClick={onSetPlan}
-                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-full shadow-lg text-lg font-bold text-white bg-green-600 hover:bg-green-700 transition transform hover:scale-[1.02]"
-            >
-                <CheckCircle className="w-6 h-6" />
-                {t('SET_AS_MY_PLAN')}
-            </button>
-
-            <div className="space-y-4">
-                {plan.days.map((day: WorkoutDay, dayIndex: number) => (
-                    <div key={day.day} className="bg-slate-800 border border-slate-700 shadow-md rounded-xl overflow-hidden">
-                        <div className="p-4 bg-slate-700/50 border-b border-slate-700 flex justify-between items-center">
-                            <div>
-                                <h4 className="text-xl font-bold text-cyan-300">{t('DAY_TITLE', { day: day.day, title: day.title })}</h4>
-                                <p className="text-sm font-medium text-cyan-400">{day.focus}</p>
-                            </div>
-                             <button 
-                                onClick={() => startWorkout(plan, dayIndex)}
-                                className="flex items-center gap-2 py-2 px-4 bg-cyan-600 text-white rounded-full shadow-lg hover:bg-cyan-700 transition transform hover:scale-105"
-                                title={t('START_DAY_WORKOUT_TITLE', { day: day.day })}
-                            >
-                                <Play size={18} />
-                                <span className="font-semibold text-sm">{t('START_WORKOUT_BUTTON')}</span>
-                            </button>
-                        </div>
-                        <div className="p-4">
-                            <ul className="space-y-3">
-                                {day.exercises.map((ex: WorkoutExercise, index: number) => (
-                                    <li key={index} className="p-3 bg-slate-700/50 rounded-lg">
-                                        <p className="font-semibold text-slate-200">{ex.name}</p>
-                                        <div className="flex justify-between items-center mt-1 text-sm text-slate-400">
-                                            <span><strong className="text-slate-200">{t('SETS')}:</strong> {ex.sets}</span>
-                                            <span><strong className="text-slate-200">{t('REPS')}:</strong> {ex.reps}</span>
-                                            <span><strong className="text-slate-200">{t('REST')}:</strong> {ex.rest}</span>
-                                        </div>
-                                        {ex.notes && <p className="mt-2 text-xs text-yellow-300 bg-yellow-500/10 p-2 rounded">💡 {ex.notes}</p>}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                ))}
-            </div>
-             {nutritionPlan && <NutritionPlanDisplay plan={nutritionPlan} />}
-        </div>
-    );
 }
 
 const NutritionTdeeModal: React.FC<{
@@ -131,7 +69,6 @@ const NutritionPlanDisplay: React.FC<{ plan: NutritionPlan }> = ({ plan }) => {
     );
 };
 
-
 export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
     const [goal, setGoal] = useState<UserProfile['goal']>('MUSCLE_GAIN');
     const [days, setDays] = useState(4);
@@ -140,18 +77,28 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
     const [error, setError] = useState<string | null>(null);
     const [plan, setPlan] = useState<WorkoutPlan | null>(null);
     const [apiKeyError, setApiKeyError] = useState(false);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
     const { t } = useTranslation();
+
+    useEffect(() => {
+        const updateStatus = () => setIsOnline(navigator.onLine);
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        return () => {
+            window.removeEventListener('online', updateStatus);
+            window.removeEventListener('offline', updateStatus);
+        };
+    }, []);
 
     const { setActivePlan } = useContext(PlanContext);
 
-    // New state for nutrition
     const [nutritionPlan, setNutritionPlan] = useState<NutritionPlan | null>(null);
-    const [isNutritionLoading, setIsNutritionLoading] = useState(false);
+    const [isNutritionLoading, setIsLoadingNutrition] = useState(false);
     const [nutritionError, setNutritionError] = useState<string | null>(null);
     const [showTdeeModal, setShowTdeeModal] = useState(false);
 
-
     const generateWorkoutPlan = async () => {
+        if (!navigator.onLine) return;
         setIsLoading(true);
         setError(null);
         setPlan(null);
@@ -159,13 +106,11 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         setApiKeyError(false);
 
         try {
-            // Pass the English keys ('MUSCLE_GAIN', 'INTERMEDIATE', etc.) to the AI
-            // for more consistent and reliable plan generation across languages.
             const generatedPlan = await getAiWorkoutPlan(goal, days, experience);
             setPlan(generatedPlan);
         } catch (err: any) {
             const errorMessage = err.toString().toLowerCase();
-            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("401") || errorMessage.includes("403") || errorMessage.includes("requested entity was not found")) {
+            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("requested entity was not found")) {
                 setApiKeyError(true);
             } else {
                 setError(err.message || t('UNKNOWN_ERROR'));
@@ -184,7 +129,6 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
         if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
             await (window as any).aistudio.openSelectKey();
             setApiKeyError(false);
-            // Automatically retry after a short delay to allow the new key to propagate
             setTimeout(() => {
                 generateWorkoutPlan();
             }, 500);
@@ -192,28 +136,20 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
     };
 
     const handleGenerateNutrition = async (tdee: number) => {
-        if (!plan || !tdee) return;
+        if (!plan || !tdee || !navigator.onLine) return;
         setShowTdeeModal(false);
-        setIsNutritionLoading(true);
+        setIsLoadingNutrition(true);
         setNutritionError(null);
         setNutritionPlan(null);
-        setApiKeyError(false);
 
         try {
             const translatedGoal = t(`GOAL_${goal.toUpperCase()}`);
             const generatedNutritionPlan = await getAiNutritionPlan(translatedGoal, tdee, plan);
             setNutritionPlan(generatedNutritionPlan);
         } catch (err: any) {
-            const errorMessage = err.toString().toLowerCase();
-            if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("requested entity was not found")) {
-                 // For nutrition, just show the generic error and let user retry manually
-                 // since the main key error handler retries the workout plan.
-                 setNutritionError(t('API_KEY_MISSING_ERROR_DESC'));
-            } else {
-                setNutritionError(err.message || t('NUTRITION_PLAN_ERROR'));
-            }
+            setNutritionError(err.message || t('NUTRITION_PLAN_ERROR'));
         } finally {
-            setIsNutritionLoading(false);
+            setIsLoadingNutrition(false);
         }
     };
 
@@ -240,27 +176,33 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
             
             {!plan && !isLoading && !apiKeyError && (
                 <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
-                    <div>
+                    {!isOnline && (
+                      <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl text-center space-y-2">
+                        <WifiOff className="mx-auto text-orange-400" size={24} />
+                        <p className="text-xs font-black text-orange-400 uppercase tracking-widest">{t('OFFLINE_FEATURE_DISABLED')}</p>
+                      </div>
+                    )}
+                    <div className={!isOnline ? 'opacity-30 pointer-events-none' : ''}>
                         <label htmlFor="goal" className="block text-sm font-medium text-slate-300">{t('PRIMARY_GOAL')}</label>
-                        <select id="goal" value={goal} onChange={e => setGoal(e.target.value as UserProfile['goal'])} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500">
+                        <select id="goal" value={goal} onChange={e => setGoal(e.target.value as UserProfile['goal'])} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200">
                             <option value="MUSCLE_GAIN">{t('GOAL_MUSCLE_GAIN')}</option>
                             <option value="FAT_LOSS">{t('GOAL_FAT_LOSS')}</option>
                             <option value="ENDURANCE">{t('GOAL_ENDURANCE')}</option>
                         </select>
                     </div>
-                     <div>
+                     <div className={!isOnline ? 'opacity-30 pointer-events-none' : ''}>
                         <label htmlFor="experience" className="block text-sm font-medium text-slate-300">{t('TRAINING_EXPERIENCE')}</label>
-                        <select id="experience" value={experience} onChange={e => setExperience(e.target.value)} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200 focus:ring-cyan-500 focus:border-cyan-500">
+                        <select id="experience" value={experience} onChange={e => setExperience(e.target.value)} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200">
                             <option value="BEGINNER">{t('EXP_BEGINNER')}</option>
                             <option value="INTERMEDIATE">{t('EXP_INTERMEDIATE')}</option>
                             <option value="ADVANCED">{t('EXP_ADVANCED')}</option>
                         </select>
                     </div>
-                    <div>
+                    <div className={!isOnline ? 'opacity-30 pointer-events-none' : ''}>
                         <label htmlFor="days" className="block text-sm font-medium text-slate-300">{t('TRAINING_DAYS_PER_WEEK')}: <span className="font-bold text-cyan-400">{days}</span></label>
                         <input id="days" type="range" min="2" max="6" value={days} onChange={e => setDays(Number(e.target.value))} className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer" />
                     </div>
-                    <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-full shadow-lg text-lg font-bold text-white bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-600 transition transform hover:scale-[1.02]">
+                    <button type="submit" disabled={isLoading || !isOnline} className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-cyan-600 text-white font-bold rounded-full shadow-lg hover:bg-cyan-700 disabled:bg-slate-700 disabled:opacity-50 transition">
                         <Sparkles className="w-5 h-5" />
                         {isLoading ? t('CREATING_PLAN_BUTTON') : t('CREATE_PLAN_BUTTON')}
                     </button>
@@ -284,24 +226,32 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                 </div>
             )}
 
-            {error && !apiKeyError && (
-                 <div className="p-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
-                    <p className="font-bold">{t('ERROR_TITLE')}</p>
-                    <p className="text-sm">{error}</p>
-                     <button onClick={resetForm} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                        {t('TRY_AGAIN_BUTTON')}
-                    </button>
-                </div>
-            )}
-
             {plan && (
-                <>
-                    <PlanDisplay plan={plan} nutritionPlan={nutritionPlan} onSetPlan={handleSetPlan} />
-                    
+                <div className="space-y-6 animate-fade-in">
+                    <div className="text-center p-4 bg-slate-700/50 rounded-lg">
+                        <h3 className="text-2xl font-bold text-cyan-300">{plan.planTitle}</h3>
+                        <p className="mt-2 text-slate-400 max-w-prose mx-auto">{plan.planSummary}</p>
+                    </div>
+
+                    <button
+                        onClick={handleSetPlan}
+                        className="w-full flex justify-center items-center gap-2 py-3 px-4 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition"
+                    >
+                        <CheckCircle className="w-6 h-6" />
+                        {t('SET_AS_MY_PLAN')}
+                    </button>
+
+                    <WorkoutPlanCard plan={plan} />
+
+                    {nutritionPlan && <NutritionPlanDisplay plan={nutritionPlan} />}
+
                     {!nutritionPlan && !isNutritionLoading && (
                         <button 
                             onClick={() => setShowTdeeModal(true)}
-                            className="w-full mt-4 flex justify-center items-center gap-2 py-3 px-4 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition"
+                            disabled={!isOnline}
+                            className={`w-full mt-4 flex justify-center items-center gap-2 py-3 px-4 rounded-full shadow-lg transition ${
+                              !isOnline ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
+                            }`}
                         >
                             <UtensilsCrossed size={20} />
                             {t('GENERATE_NUTRITION_PLAN')}
@@ -314,22 +264,14 @@ export const AiPlannerPage: React.FC<AiPlannerPageProps> = ({ setPage }) => {
                             <p className="mt-3 text-slate-400">{t('NUTRITION_AI_LOADING')}</p>
                         </div>
                     )}
-                    
-                    {nutritionError && (
-                        <div className="p-3 mt-4 text-center bg-red-900/50 text-red-300 border border-red-500/30 rounded-lg">
-                            <p className="font-bold">{nutritionError}</p>
-                            <button onClick={() => setNutritionError(null)} className="mt-2 text-sm underline">{t('CLOSE_BUTTON')}</button>
-                        </div>
-                    )}
 
-                    <button onClick={resetForm} className="w-full mt-4 py-2 px-4 border border-slate-600 rounded-full shadow-sm text-md font-medium text-slate-300 bg-slate-700 hover:bg-slate-600">
+                    <button onClick={resetForm} className="w-full mt-4 py-2 px-4 border border-slate-600 rounded-full text-slate-300 bg-slate-700 hover:bg-slate-600 transition">
                         {t('CREATE_NEW_PLAN_BUTTON')}
                     </button>
-                </>
+                </div>
             )}
 
             {showTdeeModal && <NutritionTdeeModal onGenerate={handleGenerateNutrition} onClose={() => setShowTdeeModal(false)} />}
-
         </section>
     );
 };

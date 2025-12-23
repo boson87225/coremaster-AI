@@ -1,3 +1,4 @@
+
 export const translations: { [key: string]: { en: string; zh: string } } = {
   // Global & Common
   INITIALIZING: { en: 'Initializing your connection...', zh: '正在初始化您的連線...' },
@@ -16,6 +17,10 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   EDIT: { en: 'Edit', zh: '編輯' },
   CANCEL: { en: 'Cancel', zh: '取消' },
   SAVE_CHANGES: { en: 'Save Changes', zh: '儲存變更' },
+
+  // Offline
+  OFFLINE_MODE: { en: 'Offline Mode', zh: '離線模式' },
+  OFFLINE_FEATURE_DISABLED: { en: 'Requires internet connection', zh: '此功能需要聯網使用' },
 
   // Navigation
   NAV_HOME: { en: 'Home', zh: '首頁' },
@@ -49,6 +54,8 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   NO_PLAN_SET_DESC: { en: 'Choose an option below to start your personalized fitness journey.', zh: '從下方選擇一個選項，開始您的個人化健身之旅。' },
   AI_PLANNER_CARD_TITLE: { en: 'AI Smart Planner', zh: 'AI 智慧課表' },
   AI_PLANNER_CARD_DESC: { en: 'Let AI create a custom plan for you', zh: '由 AI 為您量身打造訓練計畫' },
+  MANUAL_PLANNER_CARD_TITLE: { en: 'Manual Creator', zh: '手動建立課表' },
+  MANUAL_PLANNER_CARD_DESC: { en: 'Define your own exercises and routines', zh: '完全自定義您的動作與週期' },
   SPECIALIZED_PLAN_CARD_TITLE: { en: 'Specialized Plans', zh: '專項體能計畫' },
   SPECIALIZED_PLAN_CARD_DESC: { en: 'Choose from professional pre-set sport plans', zh: '選擇預設的專業運動計畫' },
   MY_PLAN_TITLE: { en: 'My Plan', zh: '我的計畫' },
@@ -60,6 +67,16 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   NUTRITION_TRACKING_NO_PLAN: { en: 'You can generate personalized nutrition advice after setting a workout plan.', zh: '設定訓練計畫後，您可以產生個人化的飲食建議。' },
   TODAYS_NUTRITION_GOALS: { en: "Today's Nutrition Goals", zh: '今日營養目標' },
   TOTAL_CALORIES: { en: 'Total Calories', zh: '總熱量' },
+
+  // Manual Planner
+  MANUAL_PLAN_TITLE: { en: 'Create Custom Plan', zh: '建立自定義課表' },
+  PLAN_TITLE_LABEL: { en: 'Plan Title', zh: '計畫名稱' },
+  PLAN_TITLE_PLACEHOLDER: { en: 'e.g., My 4-Day Split', zh: '例如：我的四天分化計畫' },
+  PLAN_SUMMARY_LABEL: { en: 'Summary', zh: '簡介' },
+  PLAN_SUMMARY_PLACEHOLDER: { en: 'Describe your goal', zh: '描述您的目標' },
+  ADD_DAY: { en: 'Add Day', zh: '新增訓練日' },
+  ADD_EXERCISE: { en: 'Add Exercise', zh: '新增動作' },
+  SAVE_PLAN_BUTTON: { en: 'Save Plan', zh: '儲存計畫' },
 
   // Workout Page & Sub-pages
   WORKOUT_MODE_CARDIO: { en: 'Cardio', zh: '有氧' },
@@ -225,7 +242,7 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   TDEE_CALCULATOR_TITLE: { en: 'TDEE / BMR Calculator', zh: 'TDEE / BMR 計算機' },
   TDEE_MOVED_DESC_1: { en: 'The TDEE calculator is now integrated into the', zh: 'TDEE 計算機現已整合至' },
   TDEE_MOVED_DESC_2: { en: 'AI Planner', zh: 'AI 智慧課表' },
-  TDEE_MOVED_DESC_3: { en: 'flow for a smoother experience when generating nutrition plans.', zh: '流程中，以便在生成飲食計畫時提供更流暢的體驗。' },
+  TDEE_MOVED_DESC_3: { en: 'flow for a smoother experience when generating nutrition plans.', zh: '流程中，以便在生成飲食計畫時提供更流撐的體驗。' },
   TDEE_CALCULATOR_DESC: { en: 'Enter your personal data to calculate your Total Daily Energy Expenditure (TDEE) and Basal Metabolic Rate (BMR).', zh: '輸入您的個人資料以計算每日總能量消耗 (TDEE) 和基礎代謝率 (BMR)。' },
   TDEE_ERROR_INVALID_INPUT: { en: 'Please enter valid age, weight, and height.', zh: '請輸入有效的年齡、體重和身高。' },
   GENDER: { en: 'Gender', zh: '性別' },

@@ -1,7 +1,7 @@
 
 import React, { useContext } from 'react';
 import { WorkoutContext } from '../context/WorkoutContext';
-import { ChevronDown, ChevronUp, Pause, Play, SkipForward, X, Clock } from './icons';
+import { ChevronDown, ChevronUp, Pause, Play, SkipForward, X, Clock, Activity } from './icons';
 import { formatTime } from '../utils/time';
 import { useTranslation } from '../context/LanguageContext';
 
@@ -11,105 +11,88 @@ export const WorkoutPlayer: React.FC = () => {
 
   const { status, currentPlan, currentDayIndex, currentExerciseIndex, isExpanded, restTimer } = workoutState;
 
-  if (status === 'idle' || !currentPlan) {
-    return null;
-  }
+  if (status === 'idle' || !currentPlan) return null;
 
   const currentDay = currentPlan.days[currentDayIndex];
   const currentExercise = currentDay.exercises[currentExerciseIndex];
 
-  const handlePrimaryAction = () => {
-      if (status === 'playing') {
-          startRest();
-      } else if (status === 'paused') {
-          resumeWorkout();
-      }
-  };
-
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 text-white font-sans">
-      <div className={`max-w-2xl mx-auto bg-slate-900/80 backdrop-blur-lg border-t border-slate-700 rounded-t-2xl shadow-2xl transition-all duration-300 ease-in-out ${isExpanded ? 'mb-0' : 'mb-[-120px] md:mb-[-100px]'}`}>
-        {/* Main Control Bar */}
-        <div className="flex items-center p-3">
-          {apiKeyError ? (
-            <>
-              <div className="flex-grow text-red-400">
-                  <p className="font-bold text-sm">{t('TTS_ERROR_TITLE')}</p>
-                  <p className="text-xs">{t('TTS_ERROR_DESC')}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                  <button onClick={handleSetApiKey} className="px-4 py-2 bg-cyan-600 rounded-full text-sm font-semibold">
-                      {t('SET_API_KEY_BUTTON')}
-                  </button>
-                  <button onClick={endWorkout} className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition" title={t('PLAYER_END_WORKOUT')}>
-                      <X size={24} />
-                  </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex-grow">
-                <p className="text-sm font-light text-slate-400">
-                    {status === 'resting' ? t('PLAYER_STATUS_RESTING') : currentDay.title}
-                </p>
-                <p className="text-lg font-bold truncate">
-                    {status === 'resting' ? `${t('PLAYER_NEXT_EXERCISE')}: ${currentDay.exercises[currentExerciseIndex + 1]?.name || t('PLAYER_WORKOUT_COMPLETE')}` : currentExercise.name}
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                {status !== 'resting' && (
-                    <button onClick={handlePrimaryAction} className="p-3 bg-cyan-600 rounded-full hover:bg-cyan-500 transition" title={status === 'playing' ? t('PLAYER_START_REST') : t('RESUME_BUTTON')}>
-                        {status === 'playing' ? <Clock size={24} /> : <Play size={24} />}
+    <div className={`fixed left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-lg transition-all duration-500 ease-in-out ${isExpanded ? 'bottom-8' : 'bottom-24'}`}>
+      <div className="glass rounded-[32px] border border-white/10 shadow-2xl overflow-hidden glow-cyan">
+        {/* Header Indicator */}
+        <div className="h-1 w-full bg-slate-800">
+            <div className="h-full bg-cyan-500 transition-all duration-500" style={{ width: `${((currentExerciseIndex + 1) / currentDay.exercises.length) * 100}%` }}></div>
+        </div>
+
+        <div className="p-4">
+          {/* Main Info Row */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-grow min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                    <Activity size={12} className="text-cyan-400 animate-pulse" />
+                    <span className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-widest">
+                        {status === 'resting' ? 'System Cooling' : 'Active Protocol'}
+                    </span>
+                </div>
+                <h4 className="text-lg font-extrabold text-white truncate uppercase tracking-tight">
+                    {status === 'resting' ? t('PLAYER_STATUS_RESTING') : currentExercise.name}
+                </h4>
+            </div>
+
+            <div className="flex items-center gap-2">
+                {status === 'resting' ? (
+                    <div className="text-2xl font-mono font-bold text-cyan-400 glow-text-cyan">{formatTime(restTimer)}</div>
+                ) : (
+                    <button onClick={startRest} className="w-12 h-12 bg-cyan-600 rounded-2xl flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-all">
+                        <Clock size={20} className="text-white" />
                     </button>
                 )}
-                 {status === 'resting' && (
-                    <div className="text-3xl font-mono p-2 text-cyan-300">{formatTime(restTimer)}</div>
-                )}
-                <button onClick={endWorkout} className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition" title={t('PLAYER_END_WORKOUT')}>
-                  <X size={24} />
+                <button onClick={toggleExpand} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-colors">
+                    {isExpanded ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                 </button>
-                <button onClick={toggleExpand} className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition" title={isExpanded ? t('PLAYER_COLLAPSE') : t('PLAYER_EXPAND')}>
-                  {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
-                </button>
+            </div>
+          </div>
+
+          {/* Expanded Content */}
+          {isExpanded && (
+              <div className="mt-6 space-y-6 animate-fade-in">
+                  <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('SETS')}</p>
+                          <p className="text-xl font-mono font-bold text-white">{currentExercise.sets}</p>
+                      </div>
+                      <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('REPS')}</p>
+                          <p className="text-xl font-mono font-bold text-white">{currentExercise.reps}</p>
+                      </div>
+                      <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('REST')}</p>
+                          <p className="text-xl font-mono font-bold text-white">{currentExercise.rest}</p>
+                      </div>
+                  </div>
+
+                  {currentExercise.notes && (
+                      <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-xs text-indigo-300 italic flex gap-2">
+                          <span className="not-italic">💡</span> {currentExercise.notes}
+                      </div>
+                  )}
+
+                  <div className="flex justify-between items-center pt-2">
+                      <button onClick={endWorkout} className="flex items-center gap-2 text-red-400 text-xs font-bold uppercase hover:text-red-300">
+                          <X size={16} /> {t('PLAYER_END_WORKOUT')}
+                      </button>
+                      <div className="flex gap-2">
+                          <button onClick={() => status === 'paused' ? resumeWorkout() : pauseWorkout()} className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center">
+                              {status === 'paused' ? <Play size={20} /> : <Pause size={20} />}
+                          </button>
+                          <button onClick={nextExercise} className="px-6 h-12 bg-white text-slate-950 rounded-full font-extrabold text-sm uppercase flex items-center gap-2 hover:bg-slate-200 transition-colors">
+                              {t('PLAYER_NEXT_ACTION_BUTTON')} <SkipForward size={18} />
+                          </button>
+                      </div>
+                  </div>
               </div>
-            </>
           )}
         </div>
-        
-        {/* Expanded Details */}
-        <div className="px-4 pb-4">
-            <div className="bg-white/5 p-4 rounded-lg">
-                <div className="grid grid-cols-3 text-center mb-3">
-                    <div>
-                        <p className="text-sm text-slate-400">{t('SETS')}</p>
-                        <p className="text-2xl font-bold">{currentExercise.sets}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-400">{t('REPS')}</p>
-                        <p className="text-2xl font-bold">{currentExercise.reps}</p>
-                    </div>
-                     <div>
-                        <p className="text-sm text-slate-400">{t('REST')}</p>
-                        <p className="text-2xl font-bold">{currentExercise.rest}</p>
-                    </div>
-                </div>
-                {currentExercise.notes && (
-                    <p className="mt-2 text-xs text-center text-yellow-300 bg-yellow-500/20 p-2 rounded">
-                        💡 {currentExercise.notes}
-                    </p>
-                )}
-            </div>
-             <div className="flex justify-between items-center mt-3">
-                <button onClick={() => status === 'playing' ? pauseWorkout() : resumeWorkout()} className="flex items-center gap-2 text-sm px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition">
-                     {status === 'paused' ?  <Play size={16}/> : <Pause size={16} />}
-                     {status === 'paused' ?  t('RESUME_BUTTON') : t('PAUSE_BUTTON')}
-                </button>
-                <button onClick={nextExercise} className="flex items-center gap-2 text-sm px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition">
-                    {t('PLAYER_NEXT_ACTION_BUTTON')} <SkipForward size={16} />
-                </button>
-             </div>
-        </div>
-
       </div>
     </div>
   );

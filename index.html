@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CoreMaster Fitness App</title>
     <link rel="icon" href="./logo.svg" type="image/svg+xml" />
-
-    <!-- PWA Meta Tags -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#0891b2" />
     <link rel="apple-touch-icon" href="./logo.svg" />
@@ -26,35 +26,49 @@
 }
 </script>
 <style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top left, #1e293b, #0f172a);
+    color: #f8fafc;
+  }
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
-  @keyframes fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; visibility: hidden; }
+  .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+  .glass {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
-  .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
-  .animate-fade-out { animation: fade-out 0.5s ease-in forwards; }
-  .animation-delay-500 { animation-delay: 0.5s; }
-  .animation-delay-2000 { animation-delay: 2s; }
+  .glass-bright {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+  }
+  .glow-text-cyan {
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  }
+  .blob {
+    position: fixed;
+    z-index: -1;
+    filter: blur(80px);
+    opacity: 0.35;
+    border-radius: 50%;
+  }
 </style>
 </head>
-  <body style="background-color: #0f172a;">
+  <body class="overflow-x-hidden min-h-screen">
+    <div class="blob w-[500px] h-[500px] bg-cyan-700 top-[-200px] left-[-200px]"></div>
+    <div class="blob w-[600px] h-[600px] bg-indigo-800 bottom-[-200px] right-[-200px]"></div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
-
-    <!-- PWA Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').then(registration => {
-            console.log('CoreMaster ServiceWorker registration successful with scope: ', registration.scope);
-          }, err => {
-            console.log('CoreMaster ServiceWorker registration failed: ', err);
-          });
-        });
-      }
-    </script>
   </body>
 </html>

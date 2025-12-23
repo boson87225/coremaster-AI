@@ -1,8 +1,10 @@
-import React, { createContext, useState, useRef, useCallback, useEffect } from 'react';
+
+import React, { createContext, useState, useRef, useCallback, useEffect, useContext } from 'react';
 import type { WorkoutPlan, WorkoutContextType, WorkoutState } from '../types';
 import { textToSpeech } from '../services/ttsService';
 import { decode, decodeAudioData } from '../utils/audio';
 import { useTranslation } from './LanguageContext';
+import { PlanContext } from './PlanContext';
 
 const initialState: WorkoutState = {
   currentPlan: null,
@@ -31,12 +33,11 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
   const { t } = useTranslation();
+  const { addActivityLogItem } = useContext(PlanContext);
 
   const [apiKeyError, setApiKeyError] = useState(false);
   const [lastFailedText, setLastFailedText] = useState<string | null>(null);
 
-
-  // Lazily initialize and get the AudioContext
   const getAudioContext = () => {
       if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
           try {
@@ -49,7 +50,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return audioContextRef.current;
   };
 
-  // Effect to clean up the AudioContext when the provider unmounts
   useEffect(() => {
     return () => {
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
@@ -103,18 +103,22 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setLastFailedText(text);
         }
     }
-  }, [t]);
+  }, []);
 
   const nextExercise = useCallback(() => {
     setWorkoutState(prev => {
-        if (!prev.currentPlan) {
-            return prev;
-        }
+        if (!prev.currentPlan) return prev;
 
         const currentDay = prev.currentPlan.days[prev.currentDayIndex];
         const isLastExercise = prev.currentExerciseIndex >= currentDay.exercises.length - 1;
 
         if (isLastExercise) {
+            // Log activity on finish
+            addActivityLogItem({
+                name: currentDay.title,
+                type: 'strength',
+                details: `${currentDay.exercises.length} 個動作已完成`
+            });
             speak(t('TTS_END_WORKOUT'));
             return initialState;
         } else {
@@ -124,9 +128,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
             return { ...prev, currentExerciseIndex: nextIndex, status: 'playing', restTimer: 0 };
         }
     });
-  }, [speak, t]);
+  }, [speak, t, addActivityLogItem]);
 
-  // Effect to manage the rest timer countdown
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
 
@@ -134,7 +137,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       timer = setInterval(() => {
         setWorkoutState(prev => {
           const newTime = prev.restTimer - 1;
-          // Speak countdown for the last 3 seconds
           if (newTime <= 3 && newTime > 0) {
             speak(String(newTime));
           }
@@ -142,17 +144,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         });
       }, 1000);
     }
-
     return () => clearInterval(timer);
   }, [workoutState.status, workoutState.restTimer, speak]);
 
-  // Effect to transition to the next exercise when the timer finishes
   useEffect(() => {
     if (workoutState.status === 'resting' && workoutState.restTimer === 0) {
       nextExercise();
     }
   }, [workoutState.status, workoutState.restTimer, nextExercise]);
-
 
   const startWorkout = useCallback((plan: WorkoutPlan, dayIndex: number) => {
     setWorkoutState({
@@ -163,7 +162,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isExpanded: true,
     });
     const firstExerciseName = plan.days[dayIndex].exercises[0].name;
-    speak(t('TTS_START_WORKOUT', { exercise: firstExerciseName }));
+    // Enhanced prompt as requested by user's "向心爆發、離心控制"
+    const welcomeMsg = `${t('TTS_START_WORKOUT', { exercise: firstExerciseName })}。請注意向心收縮時爆發發力，離心收縮時穩定控制速度。`;
+    speak(welcomeMsg);
   }, [speak, t]);
 
   const pauseWorkout = () => {
@@ -175,12 +176,19 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const resumeWorkout = useCallback(() => {
     setWorkoutState(prev => {
         if (prev.status !== 'paused') return prev;
-        // If there was rest time left, go back to resting. Otherwise, go to playing.
         return { ...prev, status: prev.restTimer > 0 ? 'resting' : 'playing' };
     });
   }, []);
   
   const endWorkout = () => {
+    if (workoutState.currentPlan) {
+        const currentDay = workoutState.currentPlan.days[workoutState.currentDayIndex];
+        addActivityLogItem({
+            name: currentDay.title,
+            type: 'strength',
+            details: `手動提前結束 (完成 ${workoutState.currentExerciseIndex + 1}/${currentDay.exercises.length})`
+        });
+    }
     setWorkoutState(initialState);
     speak(t('TTS_END_WORKOUT'));
   };
@@ -192,12 +200,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const startRest = useCallback(() => {
     setWorkoutState(prevState => {
       if (!prevState.currentPlan || prevState.status !== 'playing') return prevState;
-
       const currentExercise = prevState.currentPlan.days[prevState.currentDayIndex].exercises[prevState.currentExerciseIndex];
       const restDuration = parseInt(currentExercise.rest, 10) || 60;
-
       speak(t('TTS_START_REST', { duration: restDuration.toString() }));
-
       return { ...prevState, status: 'resting', restTimer: restDuration };
     });
   }, [speak, t]);

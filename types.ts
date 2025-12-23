@@ -6,7 +6,7 @@ export interface Exercise {
   secondary: string;
 }
 
-export type Page = 'home' | 'my_plan' | 'workout' | 'tracker' | 'profile' | 'ai_coach' | 'ai_planner' | 'settings';
+export type Page = 'home' | 'my_plan' | 'workout' | 'tracker' | 'profile' | 'ai_coach' | 'ai_planner' | 'manual_planner' | 'settings';
 export type WorkoutPageMode = 'cardio' | 'strength' | 'specialized';
 export type CardioMode = 'hiit' | 'liss';
 export type StrengthMode = 'primary' | 'secondary';
@@ -37,7 +37,6 @@ export interface WorkoutPlan {
   days: WorkoutDay[];
 }
 
-// Added for Workout Player
 export type WorkoutStatus = 'idle' | 'playing' | 'paused' | 'finished' | 'resting';
 
 export interface WorkoutState {
@@ -62,7 +61,6 @@ export interface WorkoutContextType {
   handleSetApiKey: () => Promise<void>;
 }
 
-// Added for Food Tracker
 export interface FoodLogItem {
   id: string;
   name: string;
@@ -82,16 +80,18 @@ export interface RecognizedFood {
   fat: number;
 }
 
-// Added for Specialized Training Page
-export interface SportExercise {
+export interface ActivityLogItem {
+  id: string;
   name: string;
-  details: string; // e.g., "3 sets of 5 reps"
+  type: 'strength' | 'cardio' | 'specialized';
+  details: string; // e.g., "3 sets x 10 reps" or "30 mins"
+  timestamp: Date;
 }
 
 export interface WeeklyWorkout {
-  day: string; // e.g., "Day 1" or "Monday"
-  focus: string; // e.g., "Explosive Power & Core"
-  exercises: SportExercise[];
+  day: string;
+  focus: string;
+  exercises: { name: string; details: string; }[];
 }
 
 export interface SpecializedPlan {
@@ -102,7 +102,6 @@ export interface SpecializedPlan {
   schedule: WeeklyWorkout[];
 }
 
-// Added for Personalized Nutrition Plan
 export interface Meal {
   name: "早餐" | "午餐" | "晚餐" | "Breakfast" | "Lunch" | "Dinner";
   description: string;
@@ -119,28 +118,26 @@ export interface NutritionPlan {
   summary: string;
 }
 
-// Added for Weight Tracker
 export interface WeightLogItem {
-  date: string; // YYYY-MM-DD
-  weight: number; // in kg
+  date: string;
+  weight: number;
 }
 
-// Added for User Profile
 export interface UserProfile {
   name: string;
   gender: 'male' | 'female';
   age: number;
-  weight: number; // in kg
-  height: number; // in cm
+  weight: number;
+  height: number;
   goal: 'MUSCLE_GAIN' | 'FAT_LOSS' | 'ENDURANCE';
 }
 
-// Added for Plan Context
 export interface PlanContextType {
     activeWorkoutPlan: WorkoutPlan | null;
     activeNutritionPlan: NutritionPlan | null;
     foodLog: FoodLogItem[];
     weightLog: WeightLogItem[];
+    activityLog: ActivityLogItem[];
     userProfile: UserProfile | null;
     isLoaded: boolean;
     setActivePlan: (workoutPlan: WorkoutPlan, nutritionPlan: NutritionPlan | null) => void;
@@ -149,9 +146,9 @@ export interface PlanContextType {
     removeFoodLogItem: (id: string) => void;
     addWeightLogItem: (item: WeightLogItem) => void;
     removeWeightLogItem: (date: string) => void;
+    addActivityLogItem: (item: Omit<ActivityLogItem, 'id' | 'timestamp'>) => void;
     setUserProfile: (profile: UserProfile) => void;
     clearPlan: () => void;
 }
 
-// Added for i18n
 export type Language = 'en' | 'zh';

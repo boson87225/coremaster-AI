@@ -1,7 +1,8 @@
-import React, { useState, useRef, useMemo, useContext } from 'react';
-import { History, Camera, Loader2, X, Trash2, Edit, List, Scale } from './icons';
+
+import React, { useState, useRef, useMemo, useContext, useEffect } from 'react';
+import { History, Camera, Loader2, X, Trash2, Edit, List, Scale, Zap, Clock, WifiOff } from './icons';
 import { recognizeFoodInImage } from '../services/geminiService';
-import type { FoodLogItem, RecognizedFood } from '../types';
+import type { FoodLogItem, RecognizedFood, ActivityLogItem } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { ManualFoodInput } from './ManualFoodInput';
@@ -9,7 +10,7 @@ import { FoodMenu } from './FoodMenu';
 import { TabButton } from './TabButton';
 import { WeightTracker } from './WeightTracker';
 
-type TrackerMode = 'food' | 'weight';
+type TrackerMode = 'food' | 'weight' | 'activity';
 type InputMode = 'camera' | 'manual' | 'menu';
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -19,6 +20,54 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.onload = () => resolve((reader.result as string).split(',')[1]);
     reader.onerror = error => reject(error);
   });
+};
+
+const ActivityTracker: React.FC = () => {
+    const { activityLog } = useContext(PlanContext);
+    const { t } = useTranslation();
+
+    const groupedActivities = useMemo(() => {
+        const groups: { [key: string]: ActivityLogItem[] } = {};
+        activityLog.forEach(item => {
+            const date = new Date(item.timestamp).toLocaleDateString();
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(item);
+        });
+        return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+    }, [activityLog]);
+
+    return (
+        <div className="space-y-6">
+            <h3 className="text-xl font-bold text-slate-200">{t('WEIGHT_HISTORY')}</h3>
+            {activityLog.length === 0 ? (
+                <p className="text-center text-slate-500 py-8 italic">{t('NO_FOOD_LOGGED')}</p>
+            ) : (
+                <div className="space-y-6">
+                    {groupedActivities.map(([date, items]) => (
+                        <div key={date} className="space-y-2">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{date}</h4>
+                            <div className="space-y-2">
+                                {items.map(item => (
+                                    <div key={item.id} className="p-4 bg-slate-700/40 rounded-xl border border-slate-700 flex items-center gap-4">
+                                        <div className={`p-2 rounded-lg ${item.type === 'strength' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                            {item.type === 'strength' ? <Zap size={20} /> : <Clock size={20} />}
+                                        </div>
+                                        <div className="flex-grow">
+                                            <p className="font-bold text-slate-200">{item.name}</p>
+                                            <p className="text-xs text-slate-400">{item.details}</p>
+                                        </div>
+                                        <span className="text-[10px] text-slate-500 font-mono">
+                                            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 };
 
 const RecognitionResult: React.FC<{
@@ -64,16 +113,28 @@ const FoodTracker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [recognizedFood, setRecognizedFood] = useState<RecognizedFood[] | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>('camera');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
   const [apiKeyError, setApiKeyError] = useState(false);
   const [imageForRetry, setImageForRetry] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    return () => {
+      window.removeEventListener('online', updateStatus);
+      window.removeEventListener('offline', updateStatus);
+    };
+  }, []);
 
   const totalCalories = useMemo(() => {
     return foodLog.reduce((sum, item) => sum + item.calories, 0);
   }, [foodLog]);
   
   const doRecognition = async (base64Image: string) => {
+    if (!navigator.onLine) return;
     setIsLoading(true);
     setError(null);
     setRecognizedFood(null);
@@ -82,12 +143,12 @@ const FoodTracker: React.FC = () => {
     try {
       const results = await recognizeFoodInImage(base64Image);
       setRecognizedFood(results);
-      setImageForRetry(null); // Clear on success
+      setImageForRetry(null); 
     } catch (err: any) {
         const errorMessage = err.toString().toLowerCase();
         if (errorMessage.includes("api key") || errorMessage.includes("permission denied") || errorMessage.includes("authentication") || errorMessage.includes("requested entity was not found")) {
             setApiKeyError(true);
-            setImageForRetry(base64Image); // Save for retry
+            setImageForRetry(base64Image); 
         } else {
             const displayMessage = err instanceof Error ? err.message : 'An unknown error occurred';
             setError(t('RECOGNITION_FAILED', { message: displayMessage }));
@@ -142,7 +203,7 @@ const FoodTracker: React.FC = () => {
       </div>
 
       {inputMode === 'camera' && (
-        <div className="p-4 bg-slate-700/50 rounded-xl border border-slate-600">
+        <div className="p-4 bg-slate-700/50 rounded-xl border border-slate-600 relative overflow-hidden group">
           <input
             type="file"
             accept="image/*"
@@ -153,11 +214,22 @@ const FoodTracker: React.FC = () => {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 border-2 border-dashed border-cyan-400/50 rounded-lg text-lg font-bold text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:border-slate-600 transition"
+            disabled={isLoading || !isOnline}
+            className={`w-full flex flex-col items-center justify-center gap-3 py-6 px-4 border-2 border-dashed rounded-2xl transition-all duration-300 ${
+              !isOnline 
+              ? 'border-slate-800 bg-slate-900/50 text-slate-700 cursor-not-allowed' 
+              : 'border-cyan-500/30 bg-cyan-500/5 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50'
+            }`}
           >
-            <Camera className="w-6 h-6" />
-            {t('RECOGNIZE_FOOD_PHOTO')}
+            <Camera className={`w-8 h-8 ${!isOnline ? 'text-slate-800' : 'text-cyan-400 animate-pulse'}`} />
+            <div className="text-center">
+              <span className="text-sm font-black uppercase tracking-widest block">{t('RECOGNIZE_FOOD_PHOTO')}</span>
+              {!isOnline && (
+                <span className="text-[10px] font-bold text-orange-500/60 uppercase tracking-tighter mt-1 flex items-center justify-center gap-1">
+                  <WifiOff size={10} /> {t('OFFLINE_FEATURE_DISABLED')}
+                </span>
+              )}
+            </div>
           </button>
         </div>
       )}
@@ -243,6 +315,10 @@ export const TrackerPage: React.FC<{ userId: string | null }> = ({ userId }) => 
     weight: {
       title: t('WEIGHT_TRACKING_TITLE'),
       icon: <Scale className="w-6 h-6 mr-2" />
+    },
+    activity: {
+        title: '運動紀錄',
+        icon: <Zap className="w-6 h-6 mr-2" />
     }
   };
 
@@ -252,7 +328,7 @@ export const TrackerPage: React.FC<{ userId: string | null }> = ({ userId }) => 
         {pageConfig[mode].icon} {pageConfig[mode].title}
       </h2>
 
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-center space-x-2 bg-slate-900/40 p-1 rounded-full">
         <TabButton<TrackerMode>
           mode="food"
           currentMode={mode}
@@ -267,9 +343,20 @@ export const TrackerPage: React.FC<{ userId: string | null }> = ({ userId }) => 
           label={t('WEIGHT_LOG_TAB')}
           icon={<Scale size={18} />}
         />
+        <TabButton<TrackerMode>
+          mode="activity"
+          currentMode={mode}
+          setMode={setMode}
+          label="活動"
+          icon={<Zap size={18} />}
+        />
       </div>
 
-      {mode === 'food' ? <FoodTracker /> : <WeightTracker />}
+      <div className="animate-fade-in">
+        {mode === 'food' && <FoodTracker />}
+        {mode === 'weight' && <WeightTracker />}
+        {mode === 'activity' && <ActivityTracker />}
+      </div>
     </section>
   );
 };
