@@ -45,5 +45,6 @@ export {
     WifiOff,
     ExternalLink,
     ShieldCheck,
-    ShieldAlert
+    ShieldAlert,
+    Terminal
 } from 'lucide-react';
