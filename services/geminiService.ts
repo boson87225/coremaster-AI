@@ -15,28 +15,38 @@ export const getEffectiveApiKey = () => {
     return process.env.API_KEY || "";
 };
 
-// 統一觸發金鑰選擇對話框 (唯一安全的登入管道)
+// 統一觸發金鑰選擇對話框 (遵循規範：觸發後即假設成功)
 export const triggerKeySetup = async () => {
-    if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-        await (window as any).aistudio.openSelectKey();
-        // 選擇後重新整理頁面以確保新金鑰注入環境變數
-        window.location.reload();
-    } else {
-        console.warn("AI Studio key selector not available in this environment.");
+    if (typeof window !== 'undefined') {
+        const aiStudio = (window as any).aistudio;
+        if (aiStudio?.openSelectKey) {
+            await aiStudio.openSelectKey();
+            // 不再執行 reload，由組件內部狀態管理或假設成功
+            return true;
+        }
     }
+    console.warn("AI Studio key selector not available.");
+    return false;
 };
 
 // 檢查是否已選擇金鑰
 export const checkHasApiKey = async (): Promise<boolean> => {
-    if (process.env.API_KEY) return true;
-    if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
-        return await (window as any).aistudio.hasSelectedApiKey();
+    // 優先檢查環境變數
+    if (process.env.API_KEY && process.env.API_KEY !== "") return true;
+    
+    // 檢查 AI Studio 狀態
+    if (typeof window !== 'undefined') {
+        const aiStudio = (window as any).aistudio;
+        if (aiStudio?.hasSelectedApiKey) {
+            return await aiStudio.hasSelectedApiKey();
+        }
     }
     return false;
 };
 
 const getAiClient = () => {
     const apiKey = getEffectiveApiKey();
+    // 每次呼叫都新建實例以確保抓取最新金鑰
     return new GoogleGenAI({ apiKey });
 };
 
@@ -44,11 +54,10 @@ const handleAiError = async (error: any) => {
     console.error("Gemini API Error:", error);
     const msg = error.toString().toLowerCase();
     
-    // 如果偵測到權限問題或找不到實體，提示使用者重新登入/選擇金鑰
+    // 如果偵測到金鑰問題，提示使用者重新選擇
     if (msg.includes("api_key_invalid") || msg.includes("requested entity was not found") || msg.includes("unauthorized")) {
-        // 重設金鑰狀態並提醒
         if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-             await triggerKeySetup();
+             await (window as any).aistudio.openSelectKey();
         }
     }
     throw error;
