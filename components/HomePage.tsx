@@ -1,31 +1,29 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { PlanContext } from '../context/PlanContext';
-import { getAiInsightTip } from '../services/geminiService';
+import { getAiInsightTip, triggerKeySetup, getEffectiveApiKey } from '../services/geminiService';
 import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale } from './icons';
 import { useTranslation } from '../context/LanguageContext';
 import type { Page } from '../types';
 
 const AiStatusBanner: React.FC = () => {
-    // 預設檢查是否有 API_KEY，如果有就直接視為 Online
     const [isLinked, setIsLinked] = useState<boolean>(true);
     const [isSettingUp, setIsSettingUp] = useState(false);
     const { t } = useTranslation();
 
     const checkStatus = useCallback(async () => {
-        // 優先檢查是否有環境變數
-        if (process.env.API_KEY && process.env.API_KEY !== "") {
+        // 1. 檢查是否有任何有效金鑰
+        if (getEffectiveApiKey() !== "") {
             setIsLinked(true);
             return;
         }
 
-        // 檢查是否已手動開啟 Demo 模式
-        const demoMode = localStorage.getItem('coremaster_demo_active');
-        if (demoMode === 'true') {
+        // 2. 檢查 Demo 模式
+        if (localStorage.getItem('coremaster_demo_active') === 'true') {
             setIsLinked(true);
             return;
         }
 
-        // 最後檢查 AI Studio 選取狀態
+        // 3. AI Studio 內環境檢查
         if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
             const result = await (window as any).aistudio.hasSelectedApiKey();
             setIsLinked(result);
@@ -43,16 +41,9 @@ const AiStatusBanner: React.FC = () => {
     const handleSetup = async () => {
         setIsSettingUp(true);
         try {
-            if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-                // 如果在 AI Studio 內
-                await (window as any).aistudio.openSelectKey();
-                setIsLinked(true);
-            } else {
-                // 如果在 Vercel 或一般瀏覽器 (Demo 模式)
-                console.log("Entering Vercel Demo Mode...");
-                localStorage.setItem('coremaster_demo_active', 'true');
-                setIsLinked(true);
-            }
+            await triggerKeySetup();
+            // 點擊後不管結果如何，都先視為已嘗試設定 (Optimistic UI)
+            setIsLinked(true);
         } catch (e) {
             console.error(e);
         } finally {
@@ -78,10 +69,10 @@ const AiStatusBanner: React.FC = () => {
                 </div>
                 <div>
                     <p className="text-xs font-black text-white uppercase tracking-widest">
-                        {isSettingUp ? 'Linking Core...' : 'AI Core Required'}
+                        {isSettingUp ? 'Linking AI Core...' : 'AI Core Required'}
                     </p>
                     <p className="text-[10px] text-orange-400 font-bold">
-                        {isSettingUp ? 'Synchronizing keys' : 'Tap to Activate Demo Mode for Vercel'}
+                        {isSettingUp ? 'Connecting to cloud' : 'Tap to Activate Demo Mode for Vercel'}
                     </p>
                 </div>
             </div>
@@ -138,7 +129,7 @@ const AiInsight: React.FC = () => {
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Generating Strategy...</p>
                 </div>
             ) : tip ? (
-                <p className="text-white text-sm leading-relaxed font-semibold">
+                <p className="text-white text-sm font-semibold">
                     {tip}
                 </p>
             ) : null}

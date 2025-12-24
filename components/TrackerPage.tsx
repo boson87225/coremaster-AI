@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useMemo, useContext, useEffect } from 'react';
 import { History, Camera, Loader2, X, Trash2, Edit, List, Scale, Zap, Clock, WifiOff } from './icons';
-import { recognizeFoodInImage } from '../services/geminiService';
+import { recognizeFoodInImage, triggerKeySetup } from '../services/geminiService';
 import type { FoodLogItem, RecognizedFood, ActivityLogItem } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -183,14 +182,12 @@ const FoodTracker: React.FC = () => {
   }
   
   const handleSetApiKeyAndRetry = async () => {
-      if ((window as any).aistudio && (window as any).aistudio.openSelectKey) {
-          await (window as any).aistudio.openSelectKey();
-          setApiKeyError(false);
-          if (imageForRetry) {
-               setTimeout(() => {
-                  doRecognition(imageForRetry);
-              }, 500);
-          }
+      await triggerKeySetup();
+      setApiKeyError(false);
+      if (imageForRetry) {
+           setTimeout(() => {
+              doRecognition(imageForRetry);
+          }, 500);
       }
   };
 

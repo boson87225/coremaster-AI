@@ -10,18 +10,41 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
-// 每次呼叫時才建立 client，確保能抓到手機選取後的 process.env.API_KEY
+// 取得當前有效的 API Key (支援 Vercel 部署與本地 Demo 貼上)
+export const getEffectiveApiKey = () => {
+    const localKey = localStorage.getItem('COREMASTER_FALLBACK_KEY');
+    return process.env.API_KEY || localKey || "";
+};
+
+// 統一觸發金鑰設定 (解決 Vercel 按下去沒反應的問題)
+export const triggerKeySetup = async () => {
+    if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
+        // 1. 如果在 AI Studio 平台內
+        await (window as any).aistudio.openSelectKey();
+    } else {
+        // 2. 如果在 Vercel/外部環境，彈出標準輸入框作為 Demo 備援
+        const key = window.prompt("Detecting Vercel/External environment.\nPlease enter your Gemini API Key for this demo:", localStorage.getItem('COREMASTER_FALLBACK_KEY') || "");
+        if (key) {
+            localStorage.setItem('COREMASTER_FALLBACK_KEY', key);
+            localStorage.setItem('coremaster_demo_active', 'true');
+            window.location.reload(); // 刷新以應用新金鑰
+        }
+    }
+};
+
 const getAiClient = () => {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = getEffectiveApiKey();
+    return new GoogleGenAI({ apiKey });
 };
 
 const handleAiError = async (error: any) => {
     console.error("Gemini API Error:", error);
-    const msg = error.toString();
-    if (msg.includes("Requested entity was not found") || msg.includes("API_KEY_INVALID")) {
-        if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-            // 在手機端 Demo 時，如果金鑰失效，主動觸發選取視窗
-            await (window as any).aistudio.openSelectKey();
+    const msg = error.toString().toLowerCase();
+    
+    // 如果是金鑰錯誤，主動提示設定
+    if (msg.includes("api_key_invalid") || msg.includes("requested entity was not found") || msg.includes("unauthorized")) {
+        if (window.confirm("AI Core Connection Failed. Would you like to set up the API Key now?")) {
+            triggerKeySetup();
         }
     }
     throw error;

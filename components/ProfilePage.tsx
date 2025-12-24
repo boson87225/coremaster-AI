@@ -1,10 +1,11 @@
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, { useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { User, ClipboardList, Share2, QrCode, Settings, Edit, BrainCircuit, ShieldCheck, ShieldAlert, ExternalLink, Loader2 } from './icons';
 import type { Page } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { QrCodeModal } from './QrCodeModal';
 import { ProfileForm } from './ProfileForm';
+import { BodyAvatar } from './BodyAvatar';
 
 const AiStatusCard: React.FC = () => {
     const { t } = useTranslation();
@@ -12,20 +13,15 @@ const AiStatusCard: React.FC = () => {
     const [isSettingUp, setIsSettingUp] = useState(false);
 
     const checkStatus = useCallback(async () => {
-        // 1. 檢查環境變數
         if (process.env.API_KEY && process.env.API_KEY !== "") {
             setIsLinked(true);
             return;
         }
-
-        // 2. 檢查本地 Demo 標記
         const demoMode = localStorage.getItem('coremaster_demo_active');
         if (demoMode === 'true') {
             setIsLinked(true);
             return;
         }
-
-        // 3. 檢查 AI Studio 內建 Key
         if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
             const result = await (window as any).aistudio.hasSelectedApiKey();
             setIsLinked(result);
@@ -46,7 +42,6 @@ const AiStatusCard: React.FC = () => {
                 await (window as any).aistudio.openSelectKey();
                 setIsLinked(true);
             } else {
-                // Vercel / External environment fallback
                 localStorage.setItem('coremaster_demo_active', 'true');
                 setIsLinked(true);
             }
@@ -104,10 +99,27 @@ const AiStatusCard: React.FC = () => {
 };
 
 export const ProfilePage: React.FC<{ userId: string | null; setPage: (page: Page) => void; }> = ({ userId, setPage }) => {
-    const { activeWorkoutPlan, userProfile, setUserProfile } = useContext(PlanContext);
+    const { activeWorkoutPlan, userProfile, setUserProfile, weightLog } = useContext(PlanContext);
     const { t } = useTranslation();
     const [isEditing, setIsEditing] = useState(false);
     const [showQrModal, setShowQrModal] = useState(false);
+
+    // Get current workout focus
+    const todayFocus = useMemo(() => {
+        if (activeWorkoutPlan && activeWorkoutPlan.days.length > 0) {
+            // Assume first day for display or cycle through
+            return activeWorkoutPlan.days[0].focus;
+        }
+        return "";
+    }, [activeWorkoutPlan]);
+
+    // Get the very latest weight for the avatar
+    const currentDisplayWeight = useMemo(() => {
+        if (weightLog && weightLog.length > 0) {
+            return weightLog[0].weight;
+        }
+        return userProfile?.weight || 70;
+    }, [weightLog, userProfile]);
 
     return (
         <section className="space-y-8 animate-fade-in pb-10">
@@ -131,6 +143,21 @@ export const ProfilePage: React.FC<{ userId: string | null; setPage: (page: Page
                 </button>
             </div>
             
+            {userProfile && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 px-2">
+                        <BrainCircuit size={16} className="text-cyan-400" />
+                        <h3 className="text-xs font-black text-white uppercase tracking-widest">Body Synthesis</h3>
+                    </div>
+                    <BodyAvatar 
+                        gender={userProfile.gender} 
+                        height={userProfile.height} 
+                        weight={currentDisplayWeight} 
+                        focus={todayFocus}
+                    />
+                </div>
+            )}
+
             <AiStatusCard />
 
             <div className="glass p-8 rounded-[3rem] border border-white/10 relative overflow-hidden">
@@ -158,7 +185,7 @@ export const ProfilePage: React.FC<{ userId: string | null; setPage: (page: Page
                         </div>
                         <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                             <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('WEIGHT')}</p>
-                            <p className="text-xl font-black text-white">{userProfile.weight} <span className="text-xs text-slate-500">KG</span></p>
+                            <p className="text-xl font-black text-white">{currentDisplayWeight.toFixed(1)} <span className="text-xs text-slate-500">KG</span></p>
                         </div>
                         <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                             <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('HEIGHT')}</p>
