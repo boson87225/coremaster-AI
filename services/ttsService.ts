@@ -1,11 +1,11 @@
 import { GoogleGenAI, Modality } from "@google/genai";
+import { getEffectiveApiKey } from "./geminiService";
 
-// Always create a new client to pick up the latest API key from the environment.
+// Always create a new client to pick up the latest API key from the environment or local storage.
 // This is crucial for the "Set API Key" functionality to work correctly.
 const getAiClient = (): GoogleGenAI => {
-  // Let the SDK handle the missing API key. This will provide more specific error
-  // messages when the API call is made, instead of throwing a generic error here.
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getEffectiveApiKey();
+  return new GoogleGenAI({ apiKey });
 };
 
 

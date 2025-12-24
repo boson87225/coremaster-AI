@@ -1,14 +1,93 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { Settings, Trash2, ArrowLeft, BrainCircuit, ShieldCheck, ShieldAlert, Zap, ExternalLink, Loader2, CheckCircle, WifiOff, Terminal, RefreshCw } from './icons';
+import { Settings, Trash2, ArrowLeft, BrainCircuit, ShieldCheck, ShieldAlert, Zap, ExternalLink, Loader2, CheckCircle, WifiOff, Terminal, RefreshCw, Edit } from './icons';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
-import { triggerKeySetup, checkHasApiKey } from '../services/geminiService';
+import { triggerKeySetup, checkHasApiKey, setCustomApiKey, removeCustomApiKey, getEffectiveApiKey } from '../services/geminiService';
 import type { Page } from '../types';
 
 interface SettingsPageProps {
     userId: string | null;
     setPage: (page: Page) => void;
 }
+
+const ManualKeyInputCard: React.FC<{ isLinked: boolean, onUpdate: () => void }> = ({ isLinked, onUpdate }) => {
+    const [inputValue, setInputValue] = useState('');
+    const [showInput, setShowInput] = useState(false);
+    
+    useEffect(() => {
+        // Check if we are using a manual key
+        const currentKey = getEffectiveApiKey();
+        const envKey = process.env.API_KEY || "";
+        // If current key is different from env key (or env key is empty), it might be manual
+        if (currentKey && currentKey !== envKey) {
+            setInputValue(currentKey); 
+        }
+    }, [isLinked]);
+
+    const handleSave = () => {
+        if (inputValue.trim().length > 10) {
+            setCustomApiKey(inputValue);
+            onUpdate();
+            setShowInput(false);
+            alert("API Key 已儲存至此裝置！");
+        } else {
+            alert("請輸入有效的 API Key");
+        }
+    };
+
+    const handleClear = () => {
+        if(confirm("確定要移除此裝置上的 API Key 嗎？")) {
+            removeCustomApiKey();
+            setInputValue("");
+            onUpdate();
+        }
+    };
+
+    return (
+        <div className="p-5 bg-slate-900/50 rounded-2xl border border-slate-700 space-y-4">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-cyan-400">
+                    <Edit size={16} />
+                    <h4 className="font-bold text-xs uppercase tracking-widest">手動輸入 API Key</h4>
+                </div>
+                <button 
+                    onClick={() => setShowInput(!showInput)} 
+                    className="text-[10px] text-slate-400 underline hover:text-white"
+                >
+                    {showInput ? "隱藏" : "展開設定"}
+                </button>
+            </div>
+
+            {showInput && (
+                <div className="space-y-3 animate-fade-in">
+                    <p className="text-[10px] text-slate-400">
+                        如果您無法設定 Vercel 環境變數，可以直接在此貼上您的 API Key。Key 將僅儲存於您的瀏覽器中。
+                    </p>
+                    <div className="flex gap-2">
+                        <input 
+                            type="password" 
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder="貼上 AIza 開頭的金鑰..."
+                            className="flex-1 bg-black/30 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-cyan-500"
+                        />
+                        <button 
+                            onClick={handleSave}
+                            className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+                        >
+                            儲存
+                        </button>
+                    </div>
+                    {isLinked && (
+                        <button onClick={handleClear} className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-1">
+                            <Trash2 size={10} /> 移除儲存的 Key
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const VercelInstructionCard: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -46,48 +125,13 @@ const VercelInstructionCard: React.FC = () => {
             
             <div className="flex items-center gap-2 text-orange-400">
                 <Terminal size={16} />
-                <h4 className="font-bold text-xs uppercase tracking-widest">Vercel Setup Required</h4>
+                <h4 className="font-bold text-xs uppercase tracking-widest">Vercel Setup (Optional)</h4>
             </div>
 
             <div className="space-y-3">
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                    在 Vercel 上使用此 App 需要設定環境變數。請依照以下步驟操作：
+                    若要讓所有使用者共用 Key，請在 Vercel 設定環境變數。若僅個人使用，請使用上方的「手動輸入」功能。
                 </p>
-                <ol className="text-[10px] text-slate-300 space-y-3 font-mono bg-black/20 p-3 rounded-lg border border-white/5">
-                    <li className="flex gap-3">
-                        <span className="text-orange-500 font-bold">01.</span>
-                        <span>前往 <strong className="text-white">Vercel Dashboard</strong> 進入本專案的 <strong className="text-white">Settings</strong>。</span>
-                    </li>
-                    <li className="flex gap-3">
-                        <span className="text-orange-500 font-bold">02.</span>
-                        <span>點選左側的 <strong className="text-white">Environment Variables</strong>。</span>
-                    </li>
-                    <li className="flex gap-3">
-                        <span className="text-orange-500 font-bold">03.</span>
-                        <div className="flex flex-col gap-1">
-                            <span>新增變數：</span>
-                            <div className="flex gap-2 items-center text-[9px]">
-                                <span className="text-slate-500">Key:</span>
-                                <code className="bg-slate-800 px-1.5 py-0.5 rounded text-cyan-400">API_KEY</code>
-                            </div>
-                            <div className="flex gap-2 items-center text-[9px]">
-                                <span className="text-slate-500">Value:</span>
-                                <span className="bg-slate-800 px-1.5 py-0.5 rounded text-emerald-400">您的 Gemini API Key</span>
-                            </div>
-                        </div>
-                    </li>
-                    <li className="flex gap-3 items-start">
-                        <span className="text-orange-500 font-bold mt-0.5">04.</span>
-                        <div className="flex flex-col gap-2">
-                            <span className="text-orange-300 font-bold uppercase tracking-wider">重要：設定後需執行 Redeploy：</span>
-                            <div className="text-[9px] text-slate-400 pl-2 border-l-2 border-slate-700 space-y-1.5 font-sans">
-                                <p>1. 點擊 Vercel 頂部 <strong className="text-white">Deployments</strong> 分頁</p>
-                                <p>2. 點擊最新紀錄右側的 <strong className="text-white">⋮</strong> (三點選單)</p>
-                                <p>3. 選擇 <strong className="text-white">Redeploy</strong> 並確認</p>
-                            </div>
-                        </div>
-                    </li>
-                </ol>
             </div>
 
             <a 
@@ -100,8 +144,7 @@ const VercelInstructionCard: React.FC = () => {
             </a>
 
             <div className="pt-2 border-t border-white/5">
-                <p className="text-[9px] text-slate-500 mb-2 font-bold text-center">設定後依然顯示 Offline?</p>
-                <button 
+                 <button 
                     onClick={handleForceRefresh}
                     disabled={isRefreshing}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-cyan-900/30 hover:bg-cyan-900/50 border border-cyan-500/30 rounded-xl text-[10px] font-bold text-cyan-400 transition-all uppercase tracking-wider"
@@ -136,7 +179,6 @@ const ApiKeyLoginSection: React.FC = () => {
     const handleLogin = async () => {
         // 如果是 Vercel 環境且未連結，點擊按鈕不觸發 API，而是聚焦教學
         if (isVercelEnv && !isLinked) {
-            // 這裡可以加入一個抖動效果提示使用者看下方教學，目前先不做
             return; 
         }
 
@@ -184,11 +226,11 @@ const ApiKeyLoginSection: React.FC = () => {
                     </p>
                 )}
 
-                {/* 按鈕區域：如果是 Vercel 且未連結，隱藏按鈕或改變樣式，這裡選擇隱藏按鈕直接顯示教學 */}
-                {(!isVercelEnv || isLinked) && (
+                {/* 按鈕區域 */}
+                {(!isVercelEnv) && (
                     <button 
                         onClick={handleLogin}
-                        disabled={isLoading || (isLinked && isVercelEnv)} // Vercel 環境下如果已連結，不允許按鈕操作
+                        disabled={isLoading}
                         className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 transition-all transform active:scale-[0.97] hover:brightness-110 ${
                             isLinked 
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
@@ -211,19 +253,13 @@ const ApiKeyLoginSection: React.FC = () => {
                     </button>
                 )}
 
-                {/* Vercel 專用教學區塊 */}
-                {isVercelEnv && !isLinked && <VercelInstructionCard />}
-
-                <div className="flex justify-center gap-4 py-1">
-                    <a 
-                        href="https://ai.google.dev/gemini-api/docs/billing" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-[9px] font-bold text-slate-500 hover:text-cyan-400 transition-colors uppercase tracking-widest"
-                    >
-                        Billing Info <ExternalLink size={10} />
-                    </a>
-                </div>
+                {/* Vercel 環境下顯示手動輸入與教學 */}
+                {isVercelEnv && (
+                    <>
+                        <ManualKeyInputCard isLinked={!!isLinked} onUpdate={refreshStatus} />
+                        <VercelInstructionCard />
+                    </>
+                )}
             </div>
         </div>
     );
@@ -290,7 +326,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ userId, setPage }) =
             <DataManagement />
 
             <div className="text-center pt-4">
-                <p className="text-[8px] font-mono text-slate-700 uppercase tracking-[0.5em]">CoreMaster OS v4.3.0 • Vercel Ready</p>
+                <p className="text-[8px] font-mono text-slate-700 uppercase tracking-[0.5em]">CoreMaster OS v4.4.0 • Vercel Ready</p>
             </div>
         </div>
     );

@@ -9,12 +9,38 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
+const CUSTOM_KEY_STORAGE_KEY = 'coremaster_custom_api_key';
+
 /**
  * 取得當前有效的 API Key
- * 注意：在 Vercel 部署中，這取決於您在 Vercel Dashboard 設定的 Environment Variables
+ * 優先順序：
+ * 1. 使用者手動輸入的 Local Key (LocalStorage)
+ * 2. 環境變數 (Vercel Env)
  */
 export const getEffectiveApiKey = () => {
+    if (typeof window !== 'undefined') {
+        const localKey = localStorage.getItem(CUSTOM_KEY_STORAGE_KEY);
+        if (localKey && localKey.trim() !== "") return localKey;
+    }
     return process.env.API_KEY || "";
+};
+
+/**
+ * 儲存使用者手動輸入的 API Key
+ */
+export const setCustomApiKey = (key: string) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem(CUSTOM_KEY_STORAGE_KEY, key.trim());
+    }
+};
+
+/**
+ * 移除使用者手動輸入的 API Key
+ */
+export const removeCustomApiKey = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem(CUSTOM_KEY_STORAGE_KEY);
+    }
 };
 
 /**
@@ -28,8 +54,11 @@ export const triggerKeySetup = async () => {
             await aiStudio.openSelectKey();
             return true;
         } else {
-            // 如果不在 AI Studio 內（例如在 Vercel 域名下）
-            alert("偵測到處於外部部署環境 (Vercel)。\n\n請確保您已在 Vercel 專案設定中的 'Environment Variables' 加入 API_KEY。\n若在 AI Studio 內使用，請點擊按鈕選取金鑰。");
+            // 如果不在 AI Studio 內（例如在 Vercel 域名下），且沒有環境變數，引導去設定頁面
+             const hasLocal = !!localStorage.getItem(CUSTOM_KEY_STORAGE_KEY);
+             if(!hasLocal) {
+                 alert("請前往「設定 (Settings)」頁面手動輸入您的 Gemini API Key 即可開始使用。");
+             }
             return false;
         }
     }
@@ -40,10 +69,16 @@ export const triggerKeySetup = async () => {
  * 檢查是否已具備 API 操作權限
  */
 export const checkHasApiKey = async (): Promise<boolean> => {
-    // 1. 優先檢查環境變數 (Vercel 或本地開發)
+    // 1. 檢查是否有 Local Custom Key
+    if (typeof window !== 'undefined') {
+        const localKey = localStorage.getItem(CUSTOM_KEY_STORAGE_KEY);
+        if (localKey && localKey.trim() !== "") return true;
+    }
+
+    // 2. 檢查環境變數 (Vercel 或本地開發)
     if (process.env.API_KEY && process.env.API_KEY !== "") return true;
     
-    // 2. 檢查 AI Studio 橋接狀態
+    // 3. 檢查 AI Studio 橋接狀態
     if (typeof window !== 'undefined') {
         const aiStudio = (window as any).aistudio;
         if (aiStudio?.hasSelectedApiKey) {
@@ -67,6 +102,7 @@ const handleAiError = async (error: any) => {
     
     // 規範：若實體找不到或未授權，重置金鑰選取狀態
     if (msg.includes("api_key_invalid") || msg.includes("requested entity was not found") || msg.includes("unauthorized")) {
+        // 如果是 Local Key 錯誤，可能需要提示使用者
         if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
              await (window as any).aistudio.openSelectKey();
         }
