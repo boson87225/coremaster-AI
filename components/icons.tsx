@@ -1,4 +1,3 @@
-
 export { 
     Dumbbell, 
     Scale, 
@@ -32,6 +31,7 @@ export {
     Target,
     Feather,
     ArrowLeft,
+    ArrowRight,
     UtensilsCrossed,
     Home,
     ArrowUpRight,

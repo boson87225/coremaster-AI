@@ -1,9 +1,56 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { PlanContext } from '../context/PlanContext';
 import { getAiInsightTip } from '../services/geminiService';
-import { Sparkles, Loader2, RefreshCw, Dumbbell, ArrowUpRight, ArrowDownRight, Minus, Scale, HeartPulse, Activity, User, History, Zap, UtensilsCrossed } from './icons';
+import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale } from './icons';
 import { useTranslation } from '../context/LanguageContext';
 import type { Page } from '../types';
+
+const AiStatusBanner: React.FC = () => {
+    const [hasKey, setHasKey] = useState<boolean>(true);
+    const { t } = useTranslation();
+
+    const checkKey = useCallback(async () => {
+        if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
+            const result = await (window as any).aistudio.hasSelectedApiKey();
+            setHasKey(result);
+        } else {
+            setHasKey(!!process.env.API_KEY);
+        }
+    }, []);
+
+    useEffect(() => {
+        checkKey();
+        const interval = setInterval(checkKey, 2000);
+        return () => clearInterval(interval);
+    }, [checkKey]);
+
+    const handleSetup = async () => {
+        if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
+            await (window as any).aistudio.openSelectKey();
+            checkKey();
+        }
+    };
+
+    if (hasKey) return null;
+
+    return (
+        <button 
+            onClick={handleSetup}
+            className="w-full mb-6 p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-[1.5rem] flex items-center justify-between group animate-pulse"
+        >
+            <div className="flex items-center gap-3 text-left">
+                <div className="p-2 bg-orange-500 text-white rounded-xl shadow-lg">
+                    <ShieldAlert size={18} />
+                </div>
+                <div>
+                    <p className="text-xs font-black text-white uppercase tracking-widest">AI Core Offline</p>
+                    <p className="text-[10px] text-orange-400 font-bold">Tap to link API Key for Mobile Demo</p>
+                </div>
+            </div>
+            <ArrowRight size={18} className="text-orange-400 group-hover:translate-x-1 transition-transform" />
+        </button>
+    );
+}
 
 const AiInsight: React.FC = () => {
     const { t, language } = useTranslation();
@@ -62,12 +109,8 @@ const AiInsight: React.FC = () => {
 }
 
 const SynergyStatus: React.FC = () => {
-    // Fixed: Moved activeWorkoutPlan, activeNutritionPlan, and foodLog from useTranslation (LanguageContext)
-    // to PlanContext where they are actually defined.
     const { t } = useTranslation();
-    const { activeWorkoutPlan, activeNutritionPlan, foodLog, userProfile } = useContext(PlanContext);
-    
-    // 這裡可以模擬計算運動與飲食的配合度
+    const { userProfile } = useContext(PlanContext);
     const synergyLevel = 85; 
 
     return (
@@ -166,6 +209,8 @@ export const HomePage: React.FC<{ setPage: (page: Page) => void; }> = ({ setPage
                     <User size={20} className="text-slate-200" />
                 </button>
             </header>
+
+            <AiStatusBanner />
 
             {!activeWorkoutPlan ? (
                 <div className="glass p-10 rounded-[3rem] text-center space-y-8 border-t-2 border-cyan-500/30">
