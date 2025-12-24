@@ -2,6 +2,7 @@
   "name": "CoreMaster Fitness App",
   "description": "A comprehensive fitness application to track workouts, generate AI-powered fitness plans, and monitor progress. It includes timers for HIIT and LISS cardio, a strength training log, and an AI coach for personalized advice.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }

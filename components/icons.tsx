@@ -42,5 +42,8 @@ export {
     QrCode,
     Settings,
     Plus,
-    WifiOff
+    WifiOff,
+    ExternalLink,
+    ShieldCheck,
+    ShieldAlert
 } from 'lucide-react';

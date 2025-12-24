@@ -1,11 +1,80 @@
 
-import React, { useContext, useState } from 'react';
-import { User, ClipboardList, Share2, QrCode, Settings, Edit } from './icons';
+import React, { useContext, useState, useEffect } from 'react';
+import { User, ClipboardList, Share2, QrCode, Settings, Edit, BrainCircuit, ShieldCheck, ShieldAlert, ExternalLink } from './icons';
 import type { Page } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { QrCodeModal } from './QrCodeModal';
 import { ProfileForm } from './ProfileForm';
+
+const AiStatusCard: React.FC = () => {
+    const { t } = useTranslation();
+    const [hasKey, setHasKey] = useState<boolean | null>(null);
+
+    const checkKey = async () => {
+        if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
+            const result = await (window as any).aistudio.hasSelectedApiKey();
+            setHasKey(result);
+        } else {
+            setHasKey(!!process.env.API_KEY);
+        }
+    };
+
+    useEffect(() => {
+        checkKey();
+    }, []);
+
+    const handleSetup = async () => {
+        if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
+            await (window as any).aistudio.openSelectKey();
+            checkKey();
+        }
+    };
+
+    return (
+        <div className="p-5 glass rounded-[2rem] border border-white/10 space-y-4">
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <BrainCircuit size={18} className="text-cyan-400" />
+                    <h3 className="text-xs font-black text-white uppercase tracking-widest">AI Core Status</h3>
+                </div>
+                {hasKey ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-[10px] font-black text-emerald-400 uppercase">Linked</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 rounded-full border border-orange-500/20">
+                        <ShieldAlert size={10} className="text-orange-400" />
+                        <span className="text-[10px] font-black text-orange-400 uppercase">Action Required</span>
+                    </div>
+                )}
+            </div>
+
+            {!hasKey && (
+                <div className="space-y-3">
+                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                        手機端 AI 功能需要您手動連結一個具備付費權限的 Google Cloud 專案 API 金鑰。
+                    </p>
+                    <button 
+                        onClick={handleSetup}
+                        className="w-full py-3 bg-cyan-500 text-slate-950 font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                        Initialize AI Core <ExternalLink size={12} />
+                    </button>
+                    <a 
+                        href="https://ai.google.dev/gemini-api/docs/billing" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-[9px] text-slate-500 hover:text-cyan-400 transition-colors block text-center underline"
+                    >
+                        Learn about Gemini Billing Requirements
+                    </a>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const ProfilePage: React.FC<{ userId: string | null; setPage: (page: Page) => void; }> = ({ userId, setPage }) => {
     const { activeWorkoutPlan, userProfile, setUserProfile } = useContext(PlanContext);
@@ -14,25 +83,35 @@ export const ProfilePage: React.FC<{ userId: string | null; setPage: (page: Page
     const [showQrModal, setShowQrModal] = useState(false);
 
     return (
-        <section className="p-4 md:p-6 bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl max-w-lg mx-auto space-y-6">
-            <div className="flex items-center gap-4">
-                 <div className="w-20 h-20 rounded-full bg-slate-700/50 flex items-center justify-center border-2 border-slate-600">
-                    <User className="w-10 h-10 text-cyan-400" />
+        <section className="space-y-8 animate-fade-in pb-10">
+            <header className="flex justify-between items-center">
+                <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-none">Profile</h1>
+                <button onClick={() => setPage('settings')} className="w-10 h-10 rounded-2xl glass flex items-center justify-center border border-white/10 hover:border-cyan-500 transition-colors">
+                    <Settings size={20} className="text-slate-400" />
+                </button>
+            </header>
+
+            <div className="flex items-center gap-5 glass p-6 rounded-[2.5rem] border border-white/10">
+                 <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-cyan-500/20">
+                    <User className="w-10 h-10 text-white" />
                 </div>
                 <div className="flex-grow">
-                    <h1 className="text-2xl font-bold text-white">{userProfile?.name || t('PROFILE_TITLE')}</h1>
-                    <p className="text-xs text-slate-500 font-mono truncate max-w-[150px]">{userId || t('ANONYMOUS_USER')}</p>
+                    <h2 className="text-2xl font-black text-white tracking-tight leading-none mb-1">{userProfile?.name || t('PROFILE_TITLE')}</h2>
+                    <p className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-widest truncate max-w-[150px]">{userId || t('ANONYMOUS_USER')}</p>
                 </div>
-                <button onClick={() => setPage('settings')} className="p-2 text-slate-400 hover:text-cyan-400"><Settings size={20}/></button>
+                <button onClick={() => setIsEditing(true)} className="p-3 bg-white/5 rounded-2xl text-slate-400 hover:text-white transition-colors border border-white/5">
+                    <Edit size={18}/>
+                </button>
             </div>
             
-            <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-slate-200">{isEditing ? t('EDIT_PROFILE_TITLE') : t('YOUR_NAME')}</h3>
-                    {!isEditing && (
-                        <button onClick={() => setIsEditing(true)} className="flex items-center gap-1 text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full"><Edit size={14} /> {t('EDIT')}</button>
-                    )}
+            <AiStatusCard />
+
+            <div className="glass p-8 rounded-[3rem] border border-white/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
+                <div className="flex justify-between items-center mb-6 relative">
+                    <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">{isEditing ? t('EDIT_PROFILE_TITLE') : 'Biometrics'}</h3>
                 </div>
+                
                 {isEditing ? (
                     <ProfileForm 
                         initialData={userProfile}
@@ -41,27 +120,38 @@ export const ProfilePage: React.FC<{ userId: string | null; setPage: (page: Page
                         onSubmit={(p) => { setUserProfile(p); setIsEditing(false); }}
                     />
                 ) : userProfile && (
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('AGE')}</p><p className="text-lg font-bold">{userProfile.age}</p></div>
-                        <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('GENDER')}</p><p className="text-lg font-bold">{t(userProfile.gender.toUpperCase() as any)}</p></div>
-                        <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('WEIGHT')}</p><p className="text-lg font-bold">{userProfile.weight} kg</p></div>
-                        <div className="bg-slate-700/50 p-3 rounded-lg text-center"><p className="text-xs text-slate-400">{t('HEIGHT')}</p><p className="text-lg font-bold">{userProfile.height} cm</p></div>
-                        <div className="bg-slate-700/50 p-3 rounded-lg text-center col-span-2"><p className="text-xs text-slate-400">{t('GOAL')}</p><p className="text-lg font-bold">{t(`GOAL_${userProfile.goal}`)}</p></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('AGE')}</p>
+                            <p className="text-xl font-black text-white">{userProfile.age}</p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('GENDER')}</p>
+                            <p className="text-xl font-black text-white">{t(userProfile.gender.toUpperCase() as any)}</p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('WEIGHT')}</p>
+                            <p className="text-xl font-black text-white">{userProfile.weight} <span className="text-xs text-slate-500">KG</span></p>
+                        </div>
+                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                            <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('HEIGHT')}</p>
+                            <p className="text-xl font-black text-white">{userProfile.height} <span className="text-xs text-slate-500">CM</span></p>
+                        </div>
+                        <div className="bg-white/5 p-5 rounded-3xl border border-white/5 col-span-2">
+                            <p className="text-[10px] text-slate-500 font-black uppercase mb-1">{t('GOAL')}</p>
+                            <p className="text-xl font-black text-cyan-400 uppercase tracking-tighter">{t(`GOAL_${userProfile.goal}`)}</p>
+                        </div>
                     </div>
                 )}
             </div>
 
-            <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <ClipboardList className="text-cyan-400" />
-                    <span className="font-bold text-slate-200">{activeWorkoutPlan ? activeWorkoutPlan.planTitle : t('NO_PLAN_SET_TITLE')}</span>
-                </div>
-                <button onClick={() => setPage('my_plan')} className="text-cyan-400 hover:underline text-sm">{t('VIEW_PLAN_BUTTON')}</button>
-            </div>
-
-            <div className="flex gap-3">
-                <button onClick={() => setShowQrModal(true)} className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-700 rounded-full font-bold"><QrCode size={18}/> {t('SHOW_QR_CODE_BUTTON')}</button>
-                <button onClick={() => navigator.share?.({url: window.location.href})} className="flex-1 flex items-center justify-center gap-2 py-3 bg-cyan-600 rounded-full font-bold"><Share2 size={18}/> {t('SHARE_WITH_FRIENDS_BUTTON')}</button>
+            <div className="flex gap-4 px-2">
+                <button onClick={() => setShowQrModal(true)} className="flex-1 flex items-center justify-center gap-3 py-5 glass border border-white/10 rounded-[2rem] font-black uppercase tracking-widest text-[10px] hover:bg-white/5 transition-colors">
+                    <QrCode size={18}/> {t('SHOW_QR_CODE_BUTTON')}
+                </button>
+                <button onClick={() => navigator.share?.({url: window.location.href})} className="flex-1 flex items-center justify-center gap-3 py-5 bg-white text-slate-950 rounded-[2rem] font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform shadow-xl">
+                    <Share2 size={18}/> {t('SHARE_WITH_FRIENDS_BUTTON')}
+                </button>
             </div>
             {showQrModal && <QrCodeModal url={window.location.href} onClose={() => setShowQrModal(false)} />}
         </section>
