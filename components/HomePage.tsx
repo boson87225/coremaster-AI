@@ -1,9 +1,71 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { PlanContext } from '../context/PlanContext';
 import { getAiInsightTip, triggerKeySetup, getEffectiveApiKey } from '../services/geminiService';
-import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale } from './icons';
+import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale, Download, Share2 } from './icons';
 import { useTranslation } from '../context/LanguageContext';
 import type { Page } from '../types';
+
+const InstallAppCard: React.FC = () => {
+    const { t } = useTranslation();
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [isIos, setIsIos] = useState(false);
+    const [isStandalone, setIsStandalone] = useState(false);
+
+    useEffect(() => {
+        setIsIos(/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream);
+        setIsStandalone(window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true);
+
+        const handler = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstall = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+        }
+    };
+
+    if (isStandalone) return null;
+    
+    // Only show if we can install (Android/Desktop Chrome) or if it's iOS (needs manual steps)
+    if (!deferredPrompt && !isIos) return null;
+
+    return (
+        <div className="mb-6 p-5 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 rounded-[2rem] border border-cyan-500/30 relative overflow-hidden animate-fade-in">
+             <div className="flex items-center gap-4">
+                <div className="p-3 bg-cyan-500 text-white rounded-2xl shadow-lg shadow-cyan-500/20">
+                    <Download size={24} />
+                </div>
+                <div>
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Install App</h3>
+                    <p className="text-[10px] text-cyan-200 font-medium mt-1">
+                        {isIos ? 'Tap Share and "Add to Home Screen"' : 'Install for the best experience'}
+                    </p>
+                </div>
+            </div>
+            {!isIos && (
+                <button 
+                    onClick={handleInstall}
+                    className="mt-4 w-full py-3 bg-white text-slate-900 font-black rounded-xl uppercase tracking-widest text-[10px] hover:bg-cyan-50 transition-colors shadow-lg"
+                >
+                    Install Now
+                </button>
+            )}
+             {isIos && (
+                <div className="mt-3 text-[10px] text-slate-300 bg-black/20 p-2 rounded-lg flex items-center gap-2">
+                    <Share2 size={12} /> <span>Tap Share &rarr; Add to Home Screen</span>
+                </div>
+            )}
+        </div>
+    )
+}
 
 const AiStatusBanner: React.FC = () => {
     const [isLinked, setIsLinked] = useState<boolean>(true);
@@ -11,7 +73,7 @@ const AiStatusBanner: React.FC = () => {
     const { t } = useTranslation();
 
     const checkStatus = useCallback(async () => {
-        // 1. 檢查是否有任何有效金鑰
+        // 1. 優先檢查環境變數 (Vercel 或本地開發)
         if (getEffectiveApiKey() !== "") {
             setIsLinked(true);
             return;
@@ -239,6 +301,7 @@ export const HomePage: React.FC<{ setPage: (page: Page) => void; }> = ({ setPage
                 </button>
             </header>
 
+            <InstallAppCard />
             <AiStatusBanner />
 
             {!activeWorkoutPlan ? (

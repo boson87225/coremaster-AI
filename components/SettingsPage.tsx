@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { Settings, Trash2, ArrowLeft, BrainCircuit, ShieldCheck, ShieldAlert, Zap, ExternalLink, Loader2, CheckCircle, WifiOff, Terminal } from './icons';
+import { Settings, Trash2, ArrowLeft, BrainCircuit, ShieldCheck, ShieldAlert, Zap, ExternalLink, Loader2, CheckCircle, WifiOff, Terminal, RefreshCw } from './icons';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { triggerKeySetup, checkHasApiKey } from '../services/geminiService';
@@ -11,6 +11,35 @@ interface SettingsPageProps {
 }
 
 const VercelInstructionCard: React.FC = () => {
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleForceRefresh = async () => {
+        if (!window.confirm("這將清除 App 快取並重新載入頁面，以確保新的 API Key 生效。是否繼續？")) return;
+        
+        setIsRefreshing(true);
+        try {
+            // 1. Unregister Service Worker
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            // 2. Clear Caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map(name => caches.delete(name))
+                );
+            }
+        } catch (e) {
+            console.error("Cache clear failed", e);
+        } finally {
+            // 3. Force Reload
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="mt-4 p-5 bg-slate-900/90 rounded-2xl border border-orange-500/30 space-y-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 blur-2xl rounded-full -mr-10 -mt-10 pointer-events-none"></div>
@@ -47,9 +76,16 @@ const VercelInstructionCard: React.FC = () => {
                             </div>
                         </div>
                     </li>
-                    <li className="flex gap-3">
-                        <span className="text-orange-500 font-bold">04.</span>
-                        <span className="text-orange-300 font-bold uppercase tracking-wider">重要：設定完成後必須 Redeploy (重新部署) 才會生效。</span>
+                    <li className="flex gap-3 items-start">
+                        <span className="text-orange-500 font-bold mt-0.5">04.</span>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-orange-300 font-bold uppercase tracking-wider">重要：設定後需執行 Redeploy：</span>
+                            <div className="text-[9px] text-slate-400 pl-2 border-l-2 border-slate-700 space-y-1.5 font-sans">
+                                <p>1. 點擊 Vercel 頂部 <strong className="text-white">Deployments</strong> 分頁</p>
+                                <p>2. 點擊最新紀錄右側的 <strong className="text-white">⋮</strong> (三點選單)</p>
+                                <p>3. 選擇 <strong className="text-white">Redeploy</strong> 並確認</p>
+                            </div>
+                        </div>
                     </li>
                 </ol>
             </div>
@@ -62,6 +98,18 @@ const VercelInstructionCard: React.FC = () => {
             >
                 取得 Gemini API Key <ExternalLink size={12} />
             </a>
+
+            <div className="pt-2 border-t border-white/5">
+                <p className="text-[9px] text-slate-500 mb-2 font-bold text-center">設定後依然顯示 Offline?</p>
+                <button 
+                    onClick={handleForceRefresh}
+                    disabled={isRefreshing}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-cyan-900/30 hover:bg-cyan-900/50 border border-cyan-500/30 rounded-xl text-[10px] font-bold text-cyan-400 transition-all uppercase tracking-wider"
+                >
+                    {isRefreshing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    強制更新並重新載入 (Fix Cache)
+                </button>
+            </div>
         </div>
     );
 };

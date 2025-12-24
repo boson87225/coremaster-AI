@@ -46,5 +46,6 @@ export {
     ExternalLink,
     ShieldCheck,
     ShieldAlert,
-    Terminal
+    Terminal,
+    Download
 } from 'lucide-react';
