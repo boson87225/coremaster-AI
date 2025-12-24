@@ -10,26 +10,29 @@ import {
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
-// 取得當前有效的 API Key (支援 Vercel 部署與本地 Demo 貼上)
+// 取得當前有效的 API Key
 export const getEffectiveApiKey = () => {
-    const localKey = localStorage.getItem('COREMASTER_FALLBACK_KEY');
-    return process.env.API_KEY || localKey || "";
+    return process.env.API_KEY || "";
 };
 
-// 統一觸發金鑰設定 (解決 Vercel 按下去沒反應的問題)
+// 統一觸發金鑰選擇對話框 (唯一安全的登入管道)
 export const triggerKeySetup = async () => {
     if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-        // 1. 如果在 AI Studio 平台內
         await (window as any).aistudio.openSelectKey();
+        // 選擇後重新整理頁面以確保新金鑰注入環境變數
+        window.location.reload();
     } else {
-        // 2. 如果在 Vercel/外部環境，彈出標準輸入框作為 Demo 備援
-        const key = window.prompt("Detecting Vercel/External environment.\nPlease enter your Gemini API Key for this demo:", localStorage.getItem('COREMASTER_FALLBACK_KEY') || "");
-        if (key) {
-            localStorage.setItem('COREMASTER_FALLBACK_KEY', key);
-            localStorage.setItem('coremaster_demo_active', 'true');
-            window.location.reload(); // 刷新以應用新金鑰
-        }
+        console.warn("AI Studio key selector not available in this environment.");
     }
+};
+
+// 檢查是否已選擇金鑰
+export const checkHasApiKey = async (): Promise<boolean> => {
+    if (process.env.API_KEY) return true;
+    if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
+        return await (window as any).aistudio.hasSelectedApiKey();
+    }
+    return false;
 };
 
 const getAiClient = () => {
@@ -41,10 +44,11 @@ const handleAiError = async (error: any) => {
     console.error("Gemini API Error:", error);
     const msg = error.toString().toLowerCase();
     
-    // 如果是金鑰錯誤，主動提示設定
+    // 如果偵測到權限問題或找不到實體，提示使用者重新登入/選擇金鑰
     if (msg.includes("api_key_invalid") || msg.includes("requested entity was not found") || msg.includes("unauthorized")) {
-        if (window.confirm("AI Core Connection Failed. Would you like to set up the API Key now?")) {
-            triggerKeySetup();
+        // 重設金鑰狀態並提醒
+        if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
+             await triggerKeySetup();
         }
     }
     throw error;
@@ -90,23 +94,6 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
     });
 
     return JSON.parse(response.text || '{}');
-  } catch (e) {
-    return handleAiError(e);
-  }
-};
-
-export const getCompetitionPrepStream = async (history: ChatMessage[], message: string) => {
-  try {
-    const ai = getAiClient();
-    const chat: Chat = ai.chats.create({
-      model: 'gemini-3-flash-preview',
-      history: buildGeminiHistory(history),
-      config: {
-        systemInstruction: COMPETITION_PREP_SYSTEM_INSTRUCTION,
-      }
-    });
-    
-    return await chat.sendMessageStream({ message });
   } catch (e) {
     return handleAiError(e);
   }
