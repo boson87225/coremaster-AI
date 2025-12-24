@@ -7,6 +7,7 @@ import type { Page } from '../types';
 
 const AiStatusBanner: React.FC = () => {
     const [hasKey, setHasKey] = useState<boolean>(true);
+    const [isSettingUp, setIsSettingUp] = useState(false);
     const { t } = useTranslation();
 
     const checkKey = useCallback(async () => {
@@ -20,14 +21,30 @@ const AiStatusBanner: React.FC = () => {
 
     useEffect(() => {
         checkKey();
-        const interval = setInterval(checkKey, 2000);
+        // 如果還沒有 Key，每 5 秒檢查一次
+        const interval = setInterval(() => {
+            if (!hasKey) checkKey();
+        }, 5000);
         return () => clearInterval(interval);
-    }, [checkKey]);
+    }, [checkKey, hasKey]);
 
     const handleSetup = async () => {
-        if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-            await (window as any).aistudio.openSelectKey();
-            checkKey();
+        if (isSettingUp) return;
+        setIsSettingUp(true);
+        
+        try {
+            if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
+                // 立即調用彈窗
+                await (window as any).aistudio.openSelectKey();
+                // 樂觀更新：根據規範，點擊後應假設成功並繼續
+                setHasKey(true);
+            } else {
+                alert("未偵測到 AI Studio 環境，請確認您是在 AI Studio 中執行。");
+            }
+        } catch (e) {
+            console.error("Setup failed", e);
+        } finally {
+            setIsSettingUp(false);
         }
     };
 
@@ -36,18 +53,27 @@ const AiStatusBanner: React.FC = () => {
     return (
         <button 
             onClick={handleSetup}
-            className="w-full mb-6 p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-[1.5rem] flex items-center justify-between group animate-pulse"
+            disabled={isSettingUp}
+            className={`w-full mb-6 p-4 rounded-[1.5rem] flex items-center justify-between group transition-all duration-300 ${
+                isSettingUp 
+                ? 'bg-slate-800 border-slate-700' 
+                : 'bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 animate-pulse'
+            }`}
         >
             <div className="flex items-center gap-3 text-left">
-                <div className="p-2 bg-orange-500 text-white rounded-xl shadow-lg">
-                    <ShieldAlert size={18} />
+                <div className={`p-2 rounded-xl shadow-lg transition-colors ${isSettingUp ? 'bg-slate-700' : 'bg-orange-500 text-white'}`}>
+                    {isSettingUp ? <Loader2 size={18} className="animate-spin" /> : <ShieldAlert size={18} />}
                 </div>
                 <div>
-                    <p className="text-xs font-black text-white uppercase tracking-widest">AI Core Offline</p>
-                    <p className="text-[10px] text-orange-400 font-bold">Tap to link API Key for Mobile Demo</p>
+                    <p className="text-xs font-black text-white uppercase tracking-widest">
+                        {isSettingUp ? 'Connecting AI Core...' : 'AI Core Offline'}
+                    </p>
+                    <p className="text-[10px] text-orange-400 font-bold">
+                        {isSettingUp ? 'Please follow the dialog instructions' : 'Tap to link API Key for Mobile Demo'}
+                    </p>
                 </div>
             </div>
-            <ArrowRight size={18} className="text-orange-400 group-hover:translate-x-1 transition-transform" />
+            {!isSettingUp && <ArrowRight size={18} className="text-orange-400 group-hover:translate-x-1 transition-transform" />}
         </button>
     );
 }

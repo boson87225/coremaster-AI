@@ -1,6 +1,5 @@
-
-import React, { useContext, useState, useEffect } from 'react';
-import { User, ClipboardList, Share2, QrCode, Settings, Edit, BrainCircuit, ShieldCheck, ShieldAlert, ExternalLink } from './icons';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
+import { User, ClipboardList, Share2, QrCode, Settings, Edit, BrainCircuit, ShieldCheck, ShieldAlert, ExternalLink, Loader2 } from './icons';
 import type { Page } from '../types';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -10,24 +9,34 @@ import { ProfileForm } from './ProfileForm';
 const AiStatusCard: React.FC = () => {
     const { t } = useTranslation();
     const [hasKey, setHasKey] = useState<boolean | null>(null);
+    const [isSettingUp, setIsSettingUp] = useState(false);
 
-    const checkKey = async () => {
+    const checkKey = useCallback(async () => {
         if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
             const result = await (window as any).aistudio.hasSelectedApiKey();
             setHasKey(result);
         } else {
             setHasKey(!!process.env.API_KEY);
         }
-    };
+    }, []);
 
     useEffect(() => {
         checkKey();
-    }, []);
+    }, [checkKey]);
 
     const handleSetup = async () => {
-        if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-            await (window as any).aistudio.openSelectKey();
-            checkKey();
+        if (isSettingUp) return;
+        setIsSettingUp(true);
+        try {
+            if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
+                await (window as any).aistudio.openSelectKey();
+                // 樂觀更新
+                setHasKey(true);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsSettingUp(false);
         }
     };
 
@@ -58,9 +67,18 @@ const AiStatusCard: React.FC = () => {
                     </p>
                     <button 
                         onClick={handleSetup}
-                        className="w-full py-3 bg-cyan-500 text-slate-950 font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
+                        disabled={isSettingUp}
+                        className={`w-full py-3 font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                            isSettingUp 
+                            ? 'bg-slate-700 text-slate-400' 
+                            : 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
+                        }`}
                     >
-                        Initialize AI Core <ExternalLink size={12} />
+                        {isSettingUp ? (
+                            <>Connecting... <Loader2 size={12} className="animate-spin" /></>
+                        ) : (
+                            <>Initialize AI Core <ExternalLink size={12} /></>
+                        )}
                     </button>
                     <a 
                         href="https://ai.google.dev/gemini-api/docs/billing" 
