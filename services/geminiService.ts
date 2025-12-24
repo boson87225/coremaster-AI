@@ -3,38 +3,47 @@ import {
     AI_COACH_SYSTEM_INSTRUCTION, 
     AI_PLANNER_RESPONSE_SCHEMA, 
     AI_PLANNER_SYSTEM_INSTRUCTION,
-    COMPETITION_PREP_SYSTEM_INSTRUCTION,
     AI_NUTRITION_SYSTEM_INSTRUCTION,
     AI_NUTRITION_RESPONSE_SCHEMA,
     AI_INSIGHT_SYSTEM_INSTRUCTION
 } from "../constants";
 import type { ChatMessage, WorkoutPlan, RecognizedFood, NutritionPlan } from "../types";
 
-// 取得當前有效的 API Key
+/**
+ * 取得當前有效的 API Key
+ * 注意：在 Vercel 部署中，這取決於您在 Vercel Dashboard 設定的 Environment Variables
+ */
 export const getEffectiveApiKey = () => {
     return process.env.API_KEY || "";
 };
 
-// 統一觸發金鑰選擇對話框 (遵循規範：觸發後即假設成功)
+/**
+ * 統一觸發金鑰選擇對話框
+ * 僅在 Google AI Studio 預覽環境中有效。
+ */
 export const triggerKeySetup = async () => {
     if (typeof window !== 'undefined') {
         const aiStudio = (window as any).aistudio;
         if (aiStudio?.openSelectKey) {
             await aiStudio.openSelectKey();
-            // 不再執行 reload，由組件內部狀態管理或假設成功
             return true;
+        } else {
+            // 如果不在 AI Studio 內（例如在 Vercel 域名下）
+            alert("偵測到處於外部部署環境 (Vercel)。\n\n請確保您已在 Vercel 專案設定中的 'Environment Variables' 加入 API_KEY。\n若在 AI Studio 內使用，請點擊按鈕選取金鑰。");
+            return false;
         }
     }
-    console.warn("AI Studio key selector not available.");
     return false;
 };
 
-// 檢查是否已選擇金鑰
+/**
+ * 檢查是否已具備 API 操作權限
+ */
 export const checkHasApiKey = async (): Promise<boolean> => {
-    // 優先檢查環境變數
+    // 1. 優先檢查環境變數 (Vercel 或本地開發)
     if (process.env.API_KEY && process.env.API_KEY !== "") return true;
     
-    // 檢查 AI Studio 狀態
+    // 2. 檢查 AI Studio 橋接狀態
     if (typeof window !== 'undefined') {
         const aiStudio = (window as any).aistudio;
         if (aiStudio?.hasSelectedApiKey) {
@@ -44,9 +53,11 @@ export const checkHasApiKey = async (): Promise<boolean> => {
     return false;
 };
 
+/**
+ * 每次呼叫都獲取新實例，確保使用最新的 API Key
+ */
 const getAiClient = () => {
     const apiKey = getEffectiveApiKey();
-    // 每次呼叫都新建實例以確保抓取最新金鑰
     return new GoogleGenAI({ apiKey });
 };
 
@@ -54,7 +65,7 @@ const handleAiError = async (error: any) => {
     console.error("Gemini API Error:", error);
     const msg = error.toString().toLowerCase();
     
-    // 如果偵測到金鑰問題，提示使用者重新選擇
+    // 規範：若實體找不到或未授權，重置金鑰選取狀態
     if (msg.includes("api_key_invalid") || msg.includes("requested entity was not found") || msg.includes("unauthorized")) {
         if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
              await (window as any).aistudio.openSelectKey();
