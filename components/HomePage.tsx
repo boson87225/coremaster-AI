@@ -6,49 +6,61 @@ import { useTranslation } from '../context/LanguageContext';
 import type { Page } from '../types';
 
 const AiStatusBanner: React.FC = () => {
-    const [hasKey, setHasKey] = useState<boolean>(true);
+    // 預設檢查是否有 API_KEY，如果有就直接視為 Online
+    const [isLinked, setIsLinked] = useState<boolean>(true);
     const [isSettingUp, setIsSettingUp] = useState(false);
     const { t } = useTranslation();
 
-    const checkKey = useCallback(async () => {
+    const checkStatus = useCallback(async () => {
+        // 優先檢查是否有環境變數
+        if (process.env.API_KEY && process.env.API_KEY !== "") {
+            setIsLinked(true);
+            return;
+        }
+
+        // 檢查是否已手動開啟 Demo 模式
+        const demoMode = localStorage.getItem('coremaster_demo_active');
+        if (demoMode === 'true') {
+            setIsLinked(true);
+            return;
+        }
+
+        // 最後檢查 AI Studio 選取狀態
         if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
             const result = await (window as any).aistudio.hasSelectedApiKey();
-            setHasKey(result);
+            setIsLinked(result);
         } else {
-            setHasKey(!!process.env.API_KEY);
+            setIsLinked(false);
         }
     }, []);
 
     useEffect(() => {
-        checkKey();
-        // 如果還沒有 Key，每 5 秒檢查一次
-        const interval = setInterval(() => {
-            if (!hasKey) checkKey();
-        }, 5000);
+        checkStatus();
+        const interval = setInterval(checkStatus, 3000);
         return () => clearInterval(interval);
-    }, [checkKey, hasKey]);
+    }, [checkStatus]);
 
     const handleSetup = async () => {
-        if (isSettingUp) return;
         setIsSettingUp(true);
-        
         try {
             if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
-                // 立即調用彈窗
+                // 如果在 AI Studio 內
                 await (window as any).aistudio.openSelectKey();
-                // 樂觀更新：根據規範，點擊後應假設成功並繼續
-                setHasKey(true);
+                setIsLinked(true);
             } else {
-                alert("未偵測到 AI Studio 環境，請確認您是在 AI Studio 中執行。");
+                // 如果在 Vercel 或一般瀏覽器 (Demo 模式)
+                console.log("Entering Vercel Demo Mode...");
+                localStorage.setItem('coremaster_demo_active', 'true');
+                setIsLinked(true);
             }
         } catch (e) {
-            console.error("Setup failed", e);
+            console.error(e);
         } finally {
             setIsSettingUp(false);
         }
     };
 
-    if (hasKey) return null;
+    if (isLinked) return null;
 
     return (
         <button 
@@ -66,10 +78,10 @@ const AiStatusBanner: React.FC = () => {
                 </div>
                 <div>
                     <p className="text-xs font-black text-white uppercase tracking-widest">
-                        {isSettingUp ? 'Connecting AI Core...' : 'AI Core Offline'}
+                        {isSettingUp ? 'Linking Core...' : 'AI Core Required'}
                     </p>
                     <p className="text-[10px] text-orange-400 font-bold">
-                        {isSettingUp ? 'Please follow the dialog instructions' : 'Tap to link API Key for Mobile Demo'}
+                        {isSettingUp ? 'Synchronizing keys' : 'Tap to Activate Demo Mode for Vercel'}
                     </p>
                 </div>
             </div>

@@ -8,21 +8,35 @@ import { ProfileForm } from './ProfileForm';
 
 const AiStatusCard: React.FC = () => {
     const { t } = useTranslation();
-    const [hasKey, setHasKey] = useState<boolean | null>(null);
+    const [isLinked, setIsLinked] = useState<boolean | null>(null);
     const [isSettingUp, setIsSettingUp] = useState(false);
 
-    const checkKey = useCallback(async () => {
+    const checkStatus = useCallback(async () => {
+        // 1. 檢查環境變數
+        if (process.env.API_KEY && process.env.API_KEY !== "") {
+            setIsLinked(true);
+            return;
+        }
+
+        // 2. 檢查本地 Demo 標記
+        const demoMode = localStorage.getItem('coremaster_demo_active');
+        if (demoMode === 'true') {
+            setIsLinked(true);
+            return;
+        }
+
+        // 3. 檢查 AI Studio 內建 Key
         if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
             const result = await (window as any).aistudio.hasSelectedApiKey();
-            setHasKey(result);
+            setIsLinked(result);
         } else {
-            setHasKey(!!process.env.API_KEY);
+            setIsLinked(false);
         }
     }, []);
 
     useEffect(() => {
-        checkKey();
-    }, [checkKey]);
+        checkStatus();
+    }, [checkStatus]);
 
     const handleSetup = async () => {
         if (isSettingUp) return;
@@ -30,8 +44,11 @@ const AiStatusCard: React.FC = () => {
         try {
             if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
                 await (window as any).aistudio.openSelectKey();
-                // 樂觀更新
-                setHasKey(true);
+                setIsLinked(true);
+            } else {
+                // Vercel / External environment fallback
+                localStorage.setItem('coremaster_demo_active', 'true');
+                setIsLinked(true);
             }
         } catch (e) {
             console.error(e);
@@ -47,23 +64,23 @@ const AiStatusCard: React.FC = () => {
                     <BrainCircuit size={18} className="text-cyan-400" />
                     <h3 className="text-xs font-black text-white uppercase tracking-widest">AI Core Status</h3>
                 </div>
-                {hasKey ? (
+                {isLinked ? (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <span className="text-[10px] font-black text-emerald-400 uppercase">Linked</span>
+                        <span className="text-[10px] font-black text-emerald-400 uppercase">Active</span>
                     </div>
                 ) : (
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 rounded-full border border-orange-500/20">
                         <ShieldAlert size={10} className="text-orange-400" />
-                        <span className="text-[10px] font-black text-orange-400 uppercase">Action Required</span>
+                        <span className="text-[10px] font-black text-orange-400 uppercase">Unlinked</span>
                     </div>
                 )}
             </div>
 
-            {!hasKey && (
+            {!isLinked && (
                 <div className="space-y-3">
                     <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                        手機端 AI 功能需要您手動連結一個具備付費權限的 Google Cloud 專案 API 金鑰。
+                        您正在外部環境 (Vercel) 執行。請在 Vercel 設定 API_KEY，或點擊下方按鈕啟動 Demo 模式。
                     </p>
                     <button 
                         onClick={handleSetup}
@@ -75,19 +92,11 @@ const AiStatusCard: React.FC = () => {
                         }`}
                     >
                         {isSettingUp ? (
-                            <>Connecting... <Loader2 size={12} className="animate-spin" /></>
+                            <>Syncing... <Loader2 size={12} className="animate-spin" /></>
                         ) : (
-                            <>Initialize AI Core <ExternalLink size={12} /></>
+                            <>Activate Demo Mode <ExternalLink size={12} /></>
                         )}
                     </button>
-                    <a 
-                        href="https://ai.google.dev/gemini-api/docs/billing" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-[9px] text-slate-500 hover:text-cyan-400 transition-colors block text-center underline"
-                    >
-                        Learn about Gemini Billing Requirements
-                    </a>
                 </div>
             )}
         </div>
