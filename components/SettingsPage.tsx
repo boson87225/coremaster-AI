@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { Settings, Trash2, ArrowLeft, BrainCircuit, ShieldCheck, ShieldAlert, Zap, ExternalLink, Loader2, CheckCircle, WifiOff, Terminal, RefreshCw, Edit } from './icons';
+import { Settings, Trash2, ArrowLeft, BrainCircuit, ShieldCheck, ShieldAlert, Zap, ExternalLink, Loader2, CheckCircle, WifiOff, Terminal, RefreshCw, Edit, FolderLock, Unlock, Copy, X } from './icons';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 import { triggerKeySetup, checkHasApiKey, setCustomApiKey, removeCustomApiKey, getEffectiveApiKey } from '../services/geminiService';
@@ -8,6 +8,61 @@ import type { Page } from '../types';
 interface SettingsPageProps {
     userId: string | null;
     setPage: (page: Page) => void;
+}
+
+const SecretVault: React.FC = () => {
+  const code = "AIzaSyCtsmsfG27Y5WoZAYDsgrmyOrvHB9Pdc_I";
+  const [copied, setCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!isOpen) {
+      return (
+          <div className="mt-8 flex justify-center animate-bounce">
+              <button 
+                onClick={() => setIsOpen(true)} 
+                className="flex flex-col items-center gap-2 text-slate-700 hover:text-cyan-500 transition-colors group"
+              >
+                  <FolderLock size={32} className="group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Open Vault</span>
+              </button>
+          </div>
+      )
+  }
+
+  return (
+      <div className="mt-6 p-5 bg-slate-950 rounded-2xl border border-cyan-500/30 animate-fade-in relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-indigo-500 to-cyan-500"></div>
+          
+          <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-cyan-400">
+                  <div className="p-1.5 bg-cyan-500/10 rounded-lg"><Unlock size={14} /></div>
+                  <h4 className="text-xs font-black uppercase tracking-widest">Emergency Access Key</h4>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-white transition-colors"><X size={16}/></button>
+          </div>
+
+          <div className="bg-black/40 p-4 rounded-xl flex items-center justify-between gap-3 border border-white/5 group hover:border-cyan-500/30 transition-colors">
+              <code className="text-xs text-slate-300 font-mono truncate select-all">{code}</code>
+              <button 
+                  onClick={handleCopy}
+                  className={`p-2 rounded-lg text-white transition-all transform active:scale-90 ${copied ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-white/10 hover:bg-white/20'}`}
+                  title="Copy Key"
+              >
+                  {copied ? <CheckCircle size={14} /> : <Copy size={14}/>}
+              </button>
+          </div>
+          
+          <p className="text-[10px] text-slate-500 mt-3 text-center leading-relaxed">
+              Use this key in the <span className="text-cyan-400 font-bold">"手動輸入 API Key"</span> section above if you are experiencing connection issues.
+          </p>
+      </div>
+  );
 }
 
 const ManualKeyInputCard: React.FC<{ isLinked: boolean, onUpdate: () => void }> = ({ isLinked, onUpdate }) => {
@@ -308,6 +363,11 @@ const DataManagement: React.FC = () => {
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ userId, setPage }) => {
     const { t } = useTranslation();
+    const [tapCount, setTapCount] = useState(0);
+
+    const handleFooterTap = () => {
+        setTapCount(prev => prev + 1);
+    };
 
     return (
         <div className="space-y-8 animate-fade-in pb-10">
@@ -325,8 +385,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ userId, setPage }) =
             <LanguageSwitcher />
             <DataManagement />
 
-            <div className="text-center pt-4">
-                <p className="text-[8px] font-mono text-slate-700 uppercase tracking-[0.5em]">CoreMaster OS v4.4.0 • Vercel Ready</p>
+            {tapCount >= 7 && <SecretVault />}
+
+            <div className="text-center pt-4 pb-8 select-none cursor-pointer active:scale-95 transition-transform" onClick={handleFooterTap}>
+                <p className="text-[8px] font-mono text-slate-700 uppercase tracking-[0.5em] hover:text-slate-600">CoreMaster OS v4.4.0 • Vercel Ready</p>
             </div>
         </div>
     );

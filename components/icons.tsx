@@ -1,3 +1,4 @@
+
 export { 
     Dumbbell, 
     Scale, 
@@ -52,5 +53,9 @@ export {
     Download,
     Flame,
     Wind,
-    Crosshair
+    Crosshair,
+    Copy,
+    FolderLock,
+    Unlock,
+    Key
 } from 'lucide-react';
