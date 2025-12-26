@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { PlanContext } from '../context/PlanContext';
 import { getAiInsightTip, triggerKeySetup, getEffectiveApiKey } from '../services/geminiService';
-import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale, Download, Share2 } from './icons';
+import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale, Download, Share2, HeartPulse, BrainCircuit } from './icons';
 import { useTranslation } from '../context/LanguageContext';
 import type { Page } from '../types';
 
@@ -34,7 +34,6 @@ const InstallAppCard: React.FC = () => {
 
     if (isStandalone) return null;
     
-    // Only show if we can install (Android/Desktop Chrome) or if it's iOS (needs manual steps)
     if (!deferredPrompt && !isIos) return null;
 
     return (
@@ -73,19 +72,14 @@ const AiStatusBanner: React.FC = () => {
     const { t } = useTranslation();
 
     const checkStatus = useCallback(async () => {
-        // 1. 優先檢查環境變數 (Vercel 或本地開發)
         if (getEffectiveApiKey() !== "") {
             setIsLinked(true);
             return;
         }
-
-        // 2. 檢查 Demo 模式
         if (localStorage.getItem('coremaster_demo_active') === 'true') {
             setIsLinked(true);
             return;
         }
-
-        // 3. AI Studio 內環境檢查
         if (typeof window !== 'undefined' && (window as any).aistudio?.hasSelectedApiKey) {
             const result = await (window as any).aistudio.hasSelectedApiKey();
             setIsLinked(result);
@@ -104,7 +98,6 @@ const AiStatusBanner: React.FC = () => {
         setIsSettingUp(true);
         try {
             await triggerKeySetup();
-            // 點擊後不管結果如何，都先視為已嘗試設定 (Optimistic UI)
             setIsLinked(true);
         } catch (e) {
             console.error(e);
@@ -199,39 +192,79 @@ const AiInsight: React.FC = () => {
     );
 }
 
-const SynergyStatus: React.FC = () => {
-    const { t } = useTranslation();
-    const { userProfile } = useContext(PlanContext);
-    const synergyLevel = 85; 
+// Updated Body Analysis Component
+const BodyStatusAnalysis: React.FC = () => {
+    const { userProfile, weightLog } = useContext(PlanContext);
+    
+    // Safety check
+    if (!userProfile) return null;
+
+    const currentWeight = weightLog.length > 0 ? weightLog[0].weight : userProfile.weight;
+    const heightM = userProfile.height / 100;
+    const bmi = currentWeight / (heightM * heightM);
+    
+    let statusLabel = "";
+    let statusColor = "";
+    let advice = "";
+    let icon = null;
+
+    if (bmi < 18.5) {
+        statusLabel = "Underweight / Ectomorph";
+        statusColor = "text-yellow-400";
+        advice = "專注於肌肥大訓練與熱量盈餘，多攝取優質碳水。";
+        icon = <UtensilsCrossed size={16} className="text-yellow-400" />;
+    } else if (bmi >= 18.5 && bmi < 24.9) {
+        statusLabel = "Optimal / Athletic";
+        statusColor = "text-emerald-400";
+        advice = "目前處於最佳狀態，可專注於提升運動表現與力量。";
+        icon = <Activity size={16} className="text-emerald-400" />;
+    } else if (bmi >= 25 && bmi < 29.9) {
+        statusLabel = "Overweight / Endomorph";
+        statusColor = "text-orange-400";
+        advice = "建議增加有氧頻率與代謝阻力訓練，控制碳水攝取。";
+        icon = <HeartPulse size={16} className="text-orange-400" />;
+    } else {
+        statusLabel = "High BMI / Power";
+        statusColor = "text-red-400";
+        advice = "優先考慮低衝擊有氧與關節友善的肌力訓練。";
+        icon = <ShieldAlert size={16} className="text-red-400" />;
+    }
 
     return (
-        <div className="grid grid-cols-2 gap-4">
-            <div className="glass p-5 rounded-[2rem] border-t border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                    <Zap size={14} className="text-yellow-400" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Synergy Score</span>
+        <div className="glass p-5 rounded-[2.5rem] border-t border-white/10 relative overflow-hidden">
+            {/* Background Chart Effect */}
+            <div className="absolute right-0 bottom-0 w-32 h-16 opacity-10">
+                <svg viewBox="0 0 100 50" className="w-full h-full">
+                    <path d="M0,50 Q25,10 50,30 T100,20" fill="none" stroke="currentColor" strokeWidth="2" className={statusColor} />
+                </svg>
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+                <BrainCircuit size={16} className={statusColor} />
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Body Analysis</h3>
+            </div>
+
+            <div className="flex items-end justify-between mb-2">
+                <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Current State</span>
+                    <span className={`text-lg font-black uppercase tracking-tight ${statusColor}`}>
+                        {statusLabel}
+                    </span>
                 </div>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-white">{synergyLevel}</span>
-                    <span className="text-xs font-bold text-slate-500">%</span>
-                </div>
-                <div className="w-full h-1 bg-slate-800 rounded-full mt-3">
-                    <div className="h-full bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.5)]" style={{ width: `${synergyLevel}%` }}></div>
+                <div className="text-right">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">BMI</span>
+                    <span className="text-2xl font-black text-white">{bmi.toFixed(1)}</span>
                 </div>
             </div>
-            <div className="glass p-5 rounded-[2rem] border-t border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                    <UtensilsCrossed size={14} className="text-emerald-400" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Metabolic State</span>
-                </div>
-                <span className="text-lg font-black text-emerald-400 uppercase tracking-tighter">
-                    {userProfile?.goal === 'FAT_LOSS' ? 'Burning' : 'Building'}
-                </span>
-                <p className="text-[10px] text-slate-500 font-bold mt-1">Optimal Range</p>
+
+            <div className="mt-3 pt-3 border-t border-white/5">
+                <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                    <span className="font-bold text-cyan-400 mr-1">AI 建議:</span> {advice}
+                </p>
             </div>
         </div>
     );
-}
+};
 
 const ProgressSnapshot: React.FC = () => {
     const { activeNutritionPlan, weightLog, foodLog } = useContext(PlanContext);
@@ -320,7 +353,8 @@ export const HomePage: React.FC<{ setPage: (page: Page) => void; }> = ({ setPage
             ) : (
                 <div className="space-y-6">
                     <AiInsight />
-                    <SynergyStatus />
+                    {/* Replaced SynergyStatus with BodyStatusAnalysis */}
+                    <BodyStatusAnalysis />
                     <ProgressSnapshot />
                     
                     <div className="grid grid-cols-2 gap-4">

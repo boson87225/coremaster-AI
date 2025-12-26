@@ -10,6 +10,15 @@ import { BodyAvatar, AvatarAction } from './BodyAvatar';
 const detectActionFromTitle = (title: string): AvatarAction => {
     const t = title.toLowerCase();
 
+    // 0. Combat / Boxing (Priority)
+    if (
+        t.includes('box') || t.includes('punch') || t.includes('jab') || t.includes('cross') || 
+        t.includes('hook') || t.includes('upper') || t.includes('fight') || t.includes('combat') || 
+        t.includes('kick') || t.includes('strike') || t.includes('拳') || t.includes('擊')
+    ) {
+        return 'boxing';
+    }
+
     // 1. Shoulders / Vertical Push
     if (
         t.includes('overhead') || t.includes('military') || t.includes('shoulder press') || t.includes('肩推') || 
@@ -106,7 +115,7 @@ const detectActionFromTitle = (title: string): AvatarAction => {
 
     // 9. Cardio / Dynamic
     if (
-        t.includes('run') || t.includes('jog') || t.includes('sprint') || t.includes('跑') || t.includes('衝刺')
+        t.includes('run') || t.includes('jog') || t.includes('sprint') || t.includes('跑') || t.includes('衝刺') || t.includes('shuttle')
     ) {
         return 'running';
     }

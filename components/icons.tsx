@@ -24,6 +24,8 @@ export {
     X,
     SkipForward,
     Volume2,
+    VolumeX,
+    Music,
     Camera,
     List,
     Edit,
@@ -47,5 +49,8 @@ export {
     ShieldCheck,
     ShieldAlert,
     Terminal,
-    Download
+    Download,
+    Flame,
+    Wind,
+    Crosshair
 } from 'lucide-react';
