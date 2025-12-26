@@ -1,12 +1,131 @@
-
 import React, { useContext } from 'react';
 import { WorkoutContext } from '../context/WorkoutContext';
+import { PlanContext } from '../context/PlanContext';
 import { ChevronDown, ChevronUp, Pause, Play, SkipForward, X, Clock, Activity } from './icons';
 import { formatTime } from '../utils/time';
 import { useTranslation } from '../context/LanguageContext';
+import { BodyAvatar, AvatarAction } from './BodyAvatar';
+
+// Helper function to map exercise names (English or Chinese) to avatar actions
+const detectActionFromTitle = (title: string): AvatarAction => {
+    const t = title.toLowerCase();
+
+    // 1. Shoulders / Vertical Push
+    if (
+        t.includes('overhead') || t.includes('military') || t.includes('shoulder press') || t.includes('肩推') || 
+        t.includes('push press') || t.includes('jerk') || t.includes('挺舉')
+    ) {
+        return 'press';
+    }
+
+    // 2. Lateral Raises / Flys
+    if (
+        t.includes('raise') || t.includes('lateral') || t.includes('flat') || t.includes('側平舉') ||
+        t.includes('fly') || t.includes('飛鳥') || t.includes('pec deck') || t.includes('夾胸')
+    ) {
+        return 'lateral';
+    }
+
+    // 3. Vertical Pulls (Pullups / Pulldowns)
+    if (
+        t.includes('pull-up') || t.includes('chin-up') || t.includes('pull up') || t.includes('引體') ||
+        t.includes('pulldown') || t.includes('pull down') || t.includes('下拉')
+    ) {
+        return 'pullup';
+    }
+
+    // 4. Horizontal Pulls (Rows)
+    if (
+        t.includes('row') || t.includes('划船') || 
+        t.includes('face pull') || t.includes('面拉') ||
+        t.includes('renegade')
+    ) {
+        return 'row';
+    }
+
+    // 5. Horizontal Push (Bench / Pushups)
+    if (
+        t.includes('bench') || t.includes('chest press') || t.includes('臥推') || t.includes('卧推') ||
+        t.includes('floor press')
+    ) {
+        return 'bench';
+    }
+    if (
+        t.includes('push-up') || t.includes('push up') || t.includes('伏地挺身') || 
+        t.includes('burpee') || t.includes('波比') || t.includes('mountain')
+    ) {
+        return 'pushup';
+    }
+
+    // 6. Arms (Biceps/Triceps)
+    if (
+        t.includes('curl') || t.includes('彎舉') || t.includes('bicep') || t.includes('二頭')
+    ) {
+        return 'curl';
+    }
+    if (
+        t.includes('tricep') || t.includes('extension') || t.includes('pushdown') || 
+        t.includes('skull') || t.includes('dip') || t.includes('三頭') || t.includes('下壓') || t.includes('撐體')
+    ) {
+        return 'extension';
+    }
+
+    // 7. Legs (Squat / Lunge / Hinge)
+    if (
+        t.includes('deadlift') || t.includes('hard pull') || t.includes('硬舉') || 
+        t.includes('rdl') || t.includes('good morning') || t.includes('clean')
+    ) {
+        if(t.includes('shrug') || t.includes('trap')) return 'shrug';
+        return 'deadlift';
+    }
+    if (
+        t.includes('lunge') || t.includes('split') || t.includes('bulgarian') || t.includes('弓箭步') || t.includes('分腿')
+    ) {
+        return 'lunge';
+    }
+    if (
+        t.includes('squat') || t.includes('深蹲') || t.includes('leg press') || t.includes('腿舉') ||
+        t.includes('step') || t.includes('calf') || t.includes('提踵')
+    ) {
+        return 'squat';
+    }
+
+    // 8. Core
+    if (
+        t.includes('plank') || t.includes('平板') || t.includes('bridge') || t.includes('橋')
+    ) {
+        return 'plank';
+    }
+    if (
+        t.includes('crunch') || t.includes('sit-up') || t.includes('abs') || t.includes('腹') ||
+        t.includes('leg raise') || t.includes('抬腿') || t.includes('twist') || t.includes('轉體') ||
+        t.includes('v-up')
+    ) {
+        return 'crutches';
+    }
+
+    // 9. Cardio / Dynamic
+    if (
+        t.includes('run') || t.includes('jog') || t.includes('sprint') || t.includes('跑') || t.includes('衝刺')
+    ) {
+        return 'running';
+    }
+    if (
+        t.includes('jump') || t.includes('hop') || t.includes('ski') || t.includes('jack') || 
+        t.includes('cardio') || t.includes('hiit') || t.includes('跳') || t.includes('繩')
+    ) {
+        return 'jumping';
+    }
+    
+    if (t.includes('shrug') || t.includes('聳肩')) return 'shrug';
+
+    // Default fallback
+    return 'idle';
+};
 
 export const WorkoutPlayer: React.FC = () => {
-  const { workoutState, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest, apiKeyError, handleSetApiKey } = useContext(WorkoutContext);
+  const { workoutState, pauseWorkout, resumeWorkout, nextExercise, endWorkout, toggleExpand, startRest } = useContext(WorkoutContext);
+  const { userProfile } = useContext(PlanContext);
   const { t } = useTranslation();
 
   const { status, currentPlan, currentDayIndex, currentExerciseIndex, isExpanded, restTimer } = workoutState;
@@ -15,6 +134,21 @@ export const WorkoutPlayer: React.FC = () => {
 
   const currentDay = currentPlan.days[currentDayIndex];
   const currentExercise = currentDay.exercises[currentExerciseIndex];
+
+  // Determine avatar action based on workout status AND exercise name
+  let avatarAction: AvatarAction = 'idle';
+  if (status === 'playing') {
+      avatarAction = detectActionFromTitle(currentExercise.name);
+  } else if (status === 'resting' || status === 'paused') {
+      avatarAction = 'idle';
+  }
+
+  // Use profile defaults if not available
+  const avatarProps = {
+      gender: userProfile?.gender || 'male',
+      weight: userProfile?.weight || 75,
+      height: userProfile?.height || 175,
+  };
 
   return (
     <div className={`fixed left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-lg transition-all duration-500 ease-in-out ${isExpanded ? 'bottom-8' : 'bottom-24'}`}>
@@ -55,8 +189,27 @@ export const WorkoutPlayer: React.FC = () => {
 
           {/* Expanded Content */}
           {isExpanded && (
-              <div className="mt-6 space-y-6 animate-fade-in">
-                  <div className="grid grid-cols-3 gap-3">
+              <div className="mt-6 space-y-6 animate-fade-in relative">
+                  
+                  {/* Holographic Avatar Container */}
+                  <div className="flex justify-center -my-4 relative z-0 opacity-80 scale-90">
+                      <div className="absolute inset-0 bg-cyan-500/10 blur-3xl rounded-full"></div>
+                      <BodyAvatar 
+                          {...avatarProps} 
+                          action={avatarAction} 
+                          hideBackground={true} 
+                          className="w-32 h-40"
+                      />
+                  </div>
+                  
+                  {/* Action Label */}
+                  <div className="text-center -mt-2 mb-2">
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] border border-white/10 px-2 py-1 rounded-full bg-black/20">
+                          Mode: {avatarAction.toUpperCase()}
+                      </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 relative z-10">
                       <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
                           <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('SETS')}</p>
                           <p className="text-xl font-mono font-bold text-white">{currentExercise.sets}</p>

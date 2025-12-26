@@ -137,7 +137,9 @@ export const getAiCoachResponseStream = async (history: ChatMessage[], message: 
 export const getAiWorkoutPlan = async (goal: string, days: number, experience: string): Promise<WorkoutPlan> => {
   try {
     const ai = getAiClient();
-    const prompt = `Generate a ${days}-day workout plan for a user with the goal of '${goal}' and an experience level of '${experience}'.`;
+    // 強制指定輸出語言為繁體中文
+    const prompt = `Generate a ${days}-day workout plan for a user with the goal of '${goal}' and an experience level of '${experience}'. 
+    IMPORTANT: Provide the response strictly in Traditional Chinese (Taiwanese usage). Translate all exercise names, titles, descriptions, and notes into Traditional Chinese. Keep the JSON property keys in English.`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -158,7 +160,9 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
 export const getAiNutritionPlan = async (goal: string, tdee: number, workoutPlan: WorkoutPlan): Promise<NutritionPlan> => {
   try {
     const ai = getAiClient();
-    const prompt = `My TDEE is ${tdee} calories, my goal is '${goal}', and here is my workout plan for today: ${JSON.stringify(workoutPlan, null, 2)}`;
+    // 強制指定輸出語言為繁體中文
+    const prompt = `My TDEE is ${tdee} calories, my goal is '${goal}', and here is my workout plan for today: ${JSON.stringify(workoutPlan, null, 2)}.
+    IMPORTANT: Provide the response strictly in Traditional Chinese (Taiwanese usage). All meal names, descriptions, and summaries must be in Traditional Chinese. Keep JSON keys in English.`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -182,7 +186,7 @@ export const recognizeFoodInImage = async (base64Image: string): Promise<Recogni
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: { parts: [
-                { text: `Analyze the food items in this image. Estimate the nutrition facts for each item (calories, protein, carbohydrates, and fat). Provide your answer as a JSON object containing a single key "foods", which is an array of objects.` },
+                { text: `Analyze the food items in this image. Estimate the nutrition facts for each item (calories, protein, carbohydrates, and fat). Provide your answer as a JSON object containing a single key "foods", which is an array of objects. Use Traditional Chinese for food names.` },
                 { inlineData: { mimeType: 'image/jpeg', data: base64Image } }
             ]},
             config: {
