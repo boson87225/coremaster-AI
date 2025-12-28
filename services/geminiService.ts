@@ -14,17 +14,21 @@ const CUSTOM_KEY_STORAGE_KEY = 'coremaster_custom_api_key';
 
 /**
  * 取得當前有效的 API Key
+ * 優先級：
+ * 1. 使用者在 UI 手動輸入並存於 localStorage 的 Key (最安全，不經過 GitHub)
+ * 2. 部署環境中的 process.env.API_KEY (Vercel 設定的環境變數)
  */
 export const getEffectiveApiKey = () => {
     if (typeof window !== 'undefined') {
         const localKey = localStorage.getItem(CUSTOM_KEY_STORAGE_KEY);
-        if (localKey && localKey.trim() !== "") return localKey;
+        if (localKey && localKey.trim() !== "") return localKey.trim();
     }
+    // 嚴禁在此處回傳任何寫死的 "AIza..." 字串
     return process.env.API_KEY || "";
 };
 
 export const setCustomApiKey = (key: string) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && key.startsWith("AIza")) {
         localStorage.setItem(CUSTOM_KEY_STORAGE_KEY, key.trim());
     }
 };
@@ -40,32 +44,32 @@ export const removeCustomApiKey = () => {
  */
 export const checkHasApiKey = async (): Promise<boolean> => {
     const key = getEffectiveApiKey();
-    return key.length > 20;
+    return key.length > 20 && key.startsWith("AIza");
 };
 
+/**
+ * 每次呼叫 API 前動態初始化，確保抓到最新（例如使用者剛手動更新）的 Key
+ */
 const getAiClient = () => {
     const apiKey = getEffectiveApiKey();
+    if (!apiKey) {
+        throw new Error("API_KEY_MISSING");
+    }
     return new GoogleGenAI({ apiKey });
 };
 
 /**
- * 關鍵更新：強化錯誤攔截
- * 偵測 403 (Forbidden) 或 401 (Unauthorized)，通常代表 Key 已被 Google 撤銷
+ * 錯誤處理攔截器
  */
 const handleAiError = async (error: any) => {
-    console.error("Gemini API Error Detail:", error);
     const msg = error.toString().toLowerCase();
     
-    // 如果偵測到金鑰失效（Expired, Invalid, Revoked）
-    if (
-        msg.includes("403") || 
-        msg.includes("401") || 
-        msg.includes("unauthorized") || 
-        msg.includes("key_invalid") ||
-        msg.includes("api_key_invalid")
-    ) {
-        // 觸發自定義事件，讓 UI 層級知道金鑰掛了
-        window.dispatchEvent(new CustomEvent('coremaster-api-revoked', { detail: { message: error.message } }));
+    // 如果 API 回傳 403 (Forbidden) 或 401 (Unauthorized)
+    // 這通常代表金鑰已被 Google 因暴露或配額問題封鎖
+    if (msg.includes("403") || msg.includes("401") || msg.includes("api_key_invalid")) {
+        window.dispatchEvent(new CustomEvent('coremaster-api-revoked', { 
+            detail: { message: "你的 API 金鑰可能已被 Google 撤銷或限制。請前往設定更換金鑰，或確保你已在 Google Cloud 設定網域限制。" } 
+        }));
     }
     throw error;
 };
@@ -84,9 +88,8 @@ export const triggerKeySetup = async () => {
     if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
         await (window as any).aistudio.openSelectKey();
     } else {
-        // 備援方案：標記為 Demo 模式
-        localStorage.setItem('coremaster_demo_active', 'true');
-        window.location.reload();
+        // 如果是在一般網頁環境，則引導至設定頁面
+        window.dispatchEvent(new CustomEvent('coremaster-request-settings'));
     }
 };
 
@@ -124,9 +127,6 @@ export const getAiWorkoutPlan = async (goal: string, days: number, experience: s
   }
 };
 
-/**
- * 產生個人化營養計畫
- */
 export const getAiNutritionPlan = async (goal: string, tdee: number, workoutPlan: WorkoutPlan): Promise<NutritionPlan> => {
     try {
         const ai = getAiClient();
