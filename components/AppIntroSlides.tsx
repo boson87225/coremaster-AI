@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Sparkles, Zap, BrainCircuit, X, ChevronRight, Activity, Bot, Target, ShieldCheck } from './icons';
+import { Sparkles, Zap, BrainCircuit, X, ChevronRight, Activity, Bot, Target, ShieldCheck, Scale, Trophy, HeartPulse } from './icons';
 
 export const AppIntroSlides: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [slide, setSlide] = useState(0);
@@ -9,18 +9,26 @@ export const AppIntroSlides: React.FC<{ onClose: () => void }> = ({ onClose }) =
         {
             title: "NEURAL CORE SYNC",
             subtitle: "下一代 AI 健身協議",
-            desc: "CoreMaster 不僅僅是紀錄工具。它透過 Gemini 3.0 神經網絡實時感知您的進步。無論是體重跳動、飲食攝取還是專項表現，AI 將為您打造動態同步的數位孿生大腦。",
+            desc: "CoreMaster 透過 Gemini 3.0 神經網絡實時感知您的進步。無論是最新體重的微調、精確的熱量攝取計算，還是 AI 教練的動態建議，您的數位孿生大腦將始終與您的目標同步。",
             icon: <BrainCircuit className="text-cyan-400" size={64} />,
             color: "from-cyan-500/20 to-indigo-500/20",
-            features: ["即時數據同步", "AI 體態分析", "動態營養調整"]
+            features: [
+                { icon: <Scale size={14} />, text: "最新體重自動同步" },
+                { icon: <HeartPulse size={14} />, text: "動態 TDEE 宏觀營養" },
+                { icon: <Bot size={14} />, text: "24/7 AI 競技備賽助理" }
+            ]
         },
         {
             title: "ELITE PROTOCOLS",
             subtitle: "職業級專項訓練庫",
-            desc: "從格鬥家到馬拉松跑者，我們預設了 12 類職業級專項訓練。每一項都包含科學的 3 日循環：爆發力突破、專項肌力強化、以及神經肌肉修復。讓您在業餘賽場展現職業表現。",
-            icon: <Zap className="text-yellow-400" size={64} />,
+            desc: "從格鬥打擊到高爾夫旋轉鏈，我們預設了 12 類專業運動員等級的體能循環。每一項計畫都包含科學的 3 日週期：爆發突破、專項肌力、以及神經肌肉修復，助您在業餘賽場展現職業表現。",
+            icon: <Trophy className="text-yellow-400" size={64} />,
             color: "from-yellow-500/20 to-orange-500/20",
-            features: ["12 項專項運動", "科學 3 日循環", "爆發與耐力雙修"]
+            features: [
+                { icon: <Target size={14} />, text: "12 類專項運動全覆蓋" },
+                { icon: <Activity size={14} />, text: "科學 3 日爆發力循環" },
+                { icon: <ShieldCheck size={14} />, text: "專業動作指南與安全防範" }
+            ]
         }
     ];
 
@@ -50,10 +58,10 @@ export const AppIntroSlides: React.FC<{ onClose: () => void }> = ({ onClose }) =
                     {current.desc}
                 </p>
 
-                <div className="grid grid-cols-1 gap-2 w-full max-w-[200px] relative z-10 pt-4">
+                <div className="grid grid-cols-1 gap-2 w-full max-w-[220px] relative z-10 pt-4">
                     {current.features.map((f, i) => (
-                        <div key={i} className="flex items-center gap-3 px-4 py-2 bg-black/30 rounded-xl border border-white/5 text-[10px] font-bold text-slate-300">
-                            <ShieldCheck size={14} className="text-cyan-500" /> {f}
+                        <div key={i} className="flex items-center gap-3 px-4 py-2.5 bg-black/30 rounded-xl border border-white/5 text-[10px] font-bold text-slate-300">
+                            <div className="text-cyan-500">{f.icon}</div> {f.text}
                         </div>
                     ))}
                 </div>
@@ -66,12 +74,12 @@ export const AppIntroSlides: React.FC<{ onClose: () => void }> = ({ onClose }) =
             </div>
 
             <div className="flex gap-4 mt-8">
-                <button onClick={onClose} className="flex-1 py-5 rounded-[2.5rem] border border-white/10 text-slate-500 font-black uppercase text-[11px] tracking-widest hover:bg-white/5 transition-all">Skip Intro</button>
+                <button onClick={onClose} className="flex-1 py-5 rounded-[2.5rem] border border-white/10 text-slate-500 font-black uppercase text-[11px] tracking-widest hover:bg-white/5 transition-all">Skip</button>
                 <button 
                     onClick={() => slide === slides.length - 1 ? onClose() : setSlide(s => s + 1)}
                     className="flex-[2] py-5 rounded-[2.5rem] bg-white text-slate-950 font-black uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform"
                 >
-                    {slide === slides.length - 1 ? "Initialize Protocol" : "Access Next Node"} <ChevronRight size={16} />
+                    {slide === slides.length - 1 ? "Initialize Protocol" : "Next Protocol"} <ChevronRight size={16} />
                 </button>
             </div>
         </div>

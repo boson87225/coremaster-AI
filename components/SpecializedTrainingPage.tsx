@@ -1,6 +1,6 @@
 
 import React, { useState, useContext, useMemo } from 'react';
-import { Zap, Swords, ArrowLeft, Bot, CheckCircle, BrainCircuit, Loader2, Sparkles, Crosshair, ShieldCheck, List, Target, Flame, Activity, Wind, Trophy, ChevronDown } from './icons';
+import { Zap, Swords, ArrowLeft, Bot, CheckCircle, BrainCircuit, Loader2, Sparkles, Crosshair, ShieldCheck, List, Target, Flame, Activity, Wind, Trophy, ChevronDown, Info, ShieldAlert } from './icons';
 import { ALL_SPECIALIZED_PLANS } from '../constants';
 import type { SpecializedPlan, WeeklyWorkout, WorkoutPlan, WorkoutExercise, TrainingLevel } from '../types';
 import { CompetitionPrepCoach } from './CompetitionPrepCoach';
@@ -53,7 +53,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                         sets: parts[0]?.trim() || '3',
                         reps: parts[1]?.trim() || '12',
                         rest: '60s',
-                        notes: `專項循環: ${currentPlan.sport}`,
+                        notes: `專項要點: ${currentPlan.keyPoints[0]}`,
                     };
                 }),
             }));
@@ -123,7 +123,45 @@ export const SpecializedTrainingPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 4. 能力指標 */}
+            {/* 4. 訓練指南 (新看板) */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2 px-2">
+                    <Info size={14} className="text-cyan-400" />
+                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Training Guide</h4>
+                </div>
+                <div className="grid gap-3">
+                    <div className="p-5 glass rounded-[2rem] border border-cyan-500/10 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <Target size={18} className="text-cyan-400" />
+                            <span className="text-[11px] font-black text-white uppercase tracking-widest">焦點: {currentPlan.trainingFocus}</span>
+                        </div>
+                        <div className="space-y-2">
+                            {currentPlan.keyPoints.map((pt, i) => (
+                                <div key={i} className="flex gap-2 text-[10px] text-slate-300">
+                                    <span className="text-cyan-500 font-black">•</span>
+                                    <p>{pt}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="p-5 glass rounded-[2rem] border border-red-500/10 space-y-3 bg-red-500/5">
+                        <div className="flex items-center gap-3">
+                            <ShieldAlert size={18} className="text-red-400" />
+                            <span className="text-[11px] font-black text-white uppercase tracking-widest">注意事項</span>
+                        </div>
+                        <div className="space-y-2">
+                            {currentPlan.precautions.map((pre, i) => (
+                                <div key={i} className="flex gap-2 text-[10px] text-red-300/80">
+                                    <span className="text-red-500 font-black">!</span>
+                                    <p>{pre}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 5. 能力指標 */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 bg-slate-900/40 rounded-[2.5rem] border border-white/10 space-y-4 shadow-xl">
                     <StatBar label="Power" value={currentPlan.stats.pwr} color="bg-red-500" />
@@ -142,9 +180,9 @@ export const SpecializedTrainingPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 5. 完整動作預覽 (渲染所有 Day) */}
+            {/* 6. 完整動作預覽 */}
             <div className="space-y-4">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">完整訓練序列</h4>
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">訓練序列清單</h4>
                 {currentPlan.schedule.map((day, idx) => (
                     <div key={idx} className="glass rounded-[2.5rem] border border-white/5 overflow-hidden transition-all hover:border-cyan-500/30 shadow-lg">
                         <div className="px-6 py-4 bg-white/5 flex justify-between items-center border-b border-white/5">
@@ -166,7 +204,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* 6. 啟動按鈕 */}
+            {/* 7. 啟動按鈕 */}
             <button
                 onClick={handleSetPlan}
                 disabled={status !== 'idle'}

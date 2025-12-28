@@ -99,7 +99,7 @@ export interface WeeklyWorkout {
 export interface SpecializedPlan {
   key: string;
   sport: string;
-  level: TrainingLevel; // 新增：訓練等級
+  level: TrainingLevel;
   description: string;
   primarySystems: string[];
   schedule: WeeklyWorkout[];
@@ -108,6 +108,7 @@ export interface SpecializedPlan {
   nutritionTips: string;
   trainingFocus: string;
   keyPoints: string[];
+  precautions: string[]; // 新增：注意事項
 }
 
 export interface Meal {
