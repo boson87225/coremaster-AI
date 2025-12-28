@@ -1,4 +1,3 @@
-
 export interface Exercise {
   id: number;
   name: string;
@@ -84,7 +83,7 @@ export interface ActivityLogItem {
   id: string;
   name: string;
   type: 'strength' | 'cardio' | 'specialized';
-  details: string; // e.g., "3 sets x 10 reps" or "30 mins"
+  details: string; 
   timestamp: Date;
 }
 
