@@ -1,3 +1,4 @@
+
 export interface Exercise {
   id: number;
   name: string;
@@ -83,7 +84,7 @@ export interface ActivityLogItem {
   id: string;
   name: string;
   type: 'strength' | 'cardio' | 'specialized';
-  details: string; 
+  details: string; // e.g., "3 sets x 10 reps" or "30 mins"
   timestamp: Date;
 }
 
@@ -93,8 +94,9 @@ export interface WeeklyWorkout {
   exercises: { name: string; details: string; }[];
 }
 
+// Added 'volleyball' | 'tennis' | 'swimming' to fix assignability errors in constants.ts
 export interface SpecializedPlan {
-  key: 'combat' | 'basketball' | 'badminton' | 'volleyball' | 'tennis' | 'swimming' | 'golf' | 'baseball' | 'soccer' | 'table_tennis';
+  key: 'combat' | 'basketball' | 'badminton' | 'volleyball' | 'tennis' | 'swimming';
   sport: string;
   description: string;
   primarySystems: string[];
