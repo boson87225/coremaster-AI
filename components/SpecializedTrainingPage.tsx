@@ -25,11 +25,11 @@ export const SpecializedTrainingPage: React.FC = () => {
     
     // UI 選擇狀態
     const [selectedSport, setSelectedSport] = useState<string>("格鬥");
-    const [selectedLevel, setSelectedLevel] = useState<TrainingLevel>("Novice");
+    const [selectedLevel, setSelectedLevel] = useState<TrainingLevel>("Pro");
     const [status, setStatus] = useState<'idle' | 'linking' | 'success'>('idle');
     const [showPrepCoach, setShowPrepCoach] = useState(false);
 
-    // 獲取獨特運動清單
+    // 獲取獨特運動清單 (12種)
     const sports = useMemo(() => Array.from(new Set(ALL_SPECIALIZED_PLANS.map(p => p.sport))), []);
     
     // 根據運動與等級過濾計畫
@@ -53,13 +53,13 @@ export const SpecializedTrainingPage: React.FC = () => {
                         sets: parts[0]?.trim() || '3',
                         reps: parts[1]?.trim() || '12',
                         rest: '60s',
-                        notes: `Level: ${currentPlan.level} 專項訓練`,
+                        notes: `專項循環: ${currentPlan.sport}`,
                     };
                 }),
             }));
 
             const workoutPlan: WorkoutPlan = {
-                planTitle: `${currentPlan.sport} ${currentPlan.level} 強化方案`,
+                planTitle: `${currentPlan.sport} ${currentPlan.level} 循環方案`,
                 planSummary: currentPlan.description,
                 days: workoutDays,
                 sportKey: currentPlan.key
@@ -73,26 +73,26 @@ export const SpecializedTrainingPage: React.FC = () => {
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
-            {/* 1. 運動類別選擇 - 改為下拉式選單 */}
+            {/* 1. 下拉選單選擇運動 */}
             <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2">運動類別 (Sports Unit)</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2">Sport Unit Category</label>
                 <div className="relative">
                     <select 
                         value={selectedSport}
                         onChange={(e) => setSelectedSport(e.target.value)}
-                        className="w-full bg-slate-800/80 border border-white/10 p-5 rounded-[1.5rem] text-sm font-black text-white uppercase tracking-widest outline-none appearance-none focus:border-cyan-500 transition-all"
+                        className="w-full bg-slate-800/80 border border-white/10 p-5 rounded-[1.5rem] text-sm font-black text-white uppercase tracking-widest outline-none appearance-none focus:border-cyan-500 transition-all pr-12"
                     >
                         {sports.map(s => (
                             <option key={s} value={s}>{s}</option>
                         ))}
                     </select>
                     <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-cyan-400">
-                        <ChevronDown size={18} />
+                        <ChevronDown size={20} />
                     </div>
                 </div>
             </div>
 
-            {/* 2. 等級引導選擇 */}
+            {/* 2. 等級選擇 */}
             <div className="bg-slate-900/60 p-1.5 rounded-[2rem] border border-white/5 flex gap-1">
                 {(['Novice', 'Pro', 'Elite'] as TrainingLevel[]).map(lv => (
                     <button
@@ -109,7 +109,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                 ))}
             </div>
 
-            {/* 3. 計畫預覽卡片 */}
+            {/* 3. 計畫預覽 */}
             <div className="relative h-64 rounded-[3rem] overflow-hidden border border-white/10 group shadow-2xl">
                 <img src={currentPlan.imageUrl} alt={currentPlan.sport} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
@@ -123,7 +123,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 4. 數據與能力指標 */}
+            {/* 4. 能力指標 */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 bg-slate-900/40 rounded-[2.5rem] border border-white/10 space-y-4 shadow-xl">
                     <StatBar label="Power" value={currentPlan.stats.pwr} color="bg-red-500" />
@@ -133,7 +133,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                 <div className="p-6 bg-slate-900/40 rounded-[2.5rem] border border-white/10 flex flex-col justify-center gap-3">
                     <div className="flex items-center gap-2">
                         <Activity size={14} className="text-cyan-400" />
-                        <span className="text-[9px] font-black text-white uppercase">每日動作: {currentPlan.schedule[0].exercises.length}項</span>
+                        <span className="text-[9px] font-black text-white uppercase">天數: {currentPlan.schedule.length}日循環</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Zap size={14} className="text-yellow-400" />
@@ -142,23 +142,23 @@ export const SpecializedTrainingPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 5. 動作預覽 */}
-            <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">訓練序列預覽</h4>
+            {/* 5. 完整動作預覽 (渲染所有 Day) */}
+            <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">完整訓練序列</h4>
                 {currentPlan.schedule.map((day, idx) => (
                     <div key={idx} className="glass rounded-[2.5rem] border border-white/5 overflow-hidden transition-all hover:border-cyan-500/30 shadow-lg">
                         <div className="px-6 py-4 bg-white/5 flex justify-between items-center border-b border-white/5">
-                            <span className="text-xs font-black text-white uppercase italic">{day.day}: {day.focus}</span>
+                            <span className="text-xs font-black text-white uppercase italic tracking-widest">{day.day}: {day.focus}</span>
                             <Trophy size={14} className="text-cyan-500/50" />
                         </div>
                         <div className="p-6 grid gap-4">
                             {day.exercises.map((ex, eIdx) => (
-                                <div key={eIdx} className="flex justify-between items-center group">
+                                <div key={eIdx} className="flex justify-between items-center group text-[11px]">
                                     <div className="flex items-center gap-3">
                                         <div className="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-cyan-500 transition-colors"></div>
-                                        <span className="text-[11px] font-medium text-slate-300 group-hover:text-white transition-colors">{ex.name}</span>
+                                        <span className="font-medium text-slate-300 group-hover:text-white">{ex.name}</span>
                                     </div>
-                                    <span className="text-[10px] font-mono font-black text-slate-500">{ex.details}</span>
+                                    <span className="font-mono font-black text-slate-500">{ex.details}</span>
                                 </div>
                             ))}
                         </div>
@@ -183,7 +183,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                         <CheckCircle size={20} /> PROTOCOL LOADED
                     </span>
                 ) : (
-                    `下載 ${currentPlan.level} 級方案`
+                    `採納 ${currentPlan.sport} 3日計畫`
                 )}
             </button>
 

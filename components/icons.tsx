@@ -22,6 +22,8 @@ export {
     RefreshCw,
     ChevronUp,
     ChevronDown,
+    // Fix: Added missing ChevronRight export
+    ChevronRight,
     X,
     SkipForward,
     Volume2,

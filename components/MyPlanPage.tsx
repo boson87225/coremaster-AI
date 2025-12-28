@@ -1,7 +1,7 @@
 
 import React, { useContext, useMemo, useState } from 'react';
 import { PlanContext } from '../context/PlanContext';
-import { ClipboardList, Zap, Sparkles, UtensilsCrossed, Trash2, Edit, Activity, BrainCircuit, Target, Trophy, Info, Flame, ShieldCheck, RefreshCw, Loader2, List, Target as Crosshair, Plus, ArrowRight, X } from './icons';
+import { ClipboardList, Zap, Sparkles, UtensilsCrossed, Trash2, Edit, Activity, BrainCircuit, Target, Trophy, Info, Flame, ShieldCheck, RefreshCw, Loader2, List, Target as Crosshair, Plus, ArrowRight, X, Scale } from './icons';
 import type { Page, WorkoutPlan, SpecializedPlan, NutritionPlan } from '../types';
 import { useTranslation } from '../context/LanguageContext';
 import { WorkoutPlanCard } from './WorkoutPlanCard';
@@ -20,34 +20,37 @@ const NutritionDashboard: React.FC<{
     const { userProfile, weightLog } = useContext(PlanContext);
     const [isLoading, setIsLoading] = useState(false);
 
-    // 核心邏輯：自動計算 TDEE 並生成飲食 (不再需要 Modal)
-    const handleGenerateAutomatically = async () => {
+    // 核心自動同步邏輯
+    const handleSyncAndGenerate = async () => {
         if (!userProfile) return;
         setIsLoading(true);
-        
         try {
-            // 1. 抓取最新數據：優先讀取 Tracker 紀錄，否則使用註冊資料
-            const latestWeight = weightLog.length > 0 ? weightLog[0].weight : userProfile.weight;
+            // 1. 抓取最新生理數據：優先讀取 Tracker 紀錄，否則使用註冊資料
+            // weightLog[0] 假設已經依照日期降序排列
+            const latestWeightRecord = weightLog.length > 0 ? weightLog[0].weight : userProfile.weight;
+            
+            // 2. Mifflin-St Jeor TDEE 計算 (內部靜默完成，不再需要 Modal)
             const { gender, age, height, goal } = userProfile;
-            
-            // 2. 內部 TDEE 計算 (Mifflin-St Jeor)
             let bmr = gender === 'male' 
-                ? (10 * latestWeight) + (6.25 * height) - (5 * age) + 5
-                : (10 * latestWeight) + (6.25 * height) - (5 * age) - 161;
+                ? (10 * latestWeightRecord) + (6.25 * height) - (5 * age) + 5
+                : (10 * latestWeightRecord) + (6.25 * height) - (5 * age) - 161;
             
-            // 假設中度活動量 (1.55) 作為標準基準
-            const calculatedTdee = bmr * 1.55;
-            
+            const calculatedTdee = bmr * 1.55; // 基準：中度活動量
             const goalStr = t(`GOAL_${goal.toUpperCase() as any}`) || goal;
+            
+            // 3. AI 生成
             const plan = await getAiNutritionPlan(goalStr, calculatedTdee, workoutPlan);
             onUpdated(plan);
         } catch (e) {
             console.error(e);
-            alert("飲食建議產生失敗，請確認 API Key。");
+            alert("同步生成失敗，請確認網路與 API 設定。");
         } finally {
             setIsLoading(false);
         }
     };
+
+    // 獲取當前使用的體重基準 (顯示用)
+    const currentWeightBase = weightLog.length > 0 ? weightLog[0].weight : userProfile?.weight;
 
     return (
         <div className="p-8 glass rounded-[3rem] border border-emerald-500/20 bg-gradient-to-br from-slate-900 via-emerald-950/10 to-slate-950 relative overflow-hidden">
@@ -58,12 +61,12 @@ const NutritionDashboard: React.FC<{
                     <div className="p-2.5 bg-emerald-500 text-slate-950 rounded-2xl shadow-lg shadow-emerald-500/20"><UtensilsCrossed size={18} /></div>
                     <div>
                         <h3 className="text-xs font-black text-white uppercase tracking-widest">Neural Nutrition</h3>
-                        <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Dynamic Sync Enabled</p>
+                        <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Dynamic Sync Active</p>
                     </div>
                 </div>
                 {nutritionPlan && (
-                    <button onClick={handleGenerateAutomatically} className="p-2 rounded-xl bg-white/5 border border-white/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-900 transition-all">
-                        <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                    <button onClick={handleSyncAndGenerate} className="p-2 rounded-xl bg-white/5 border border-white/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-900 transition-all">
+                        <RefreshCw size={14} className={isLoading ? "animate-spin" : ""}/>
                     </button>
                 )}
              </div>
@@ -71,12 +74,19 @@ const NutritionDashboard: React.FC<{
              {isLoading ? (
                  <div className="py-10 flex flex-col items-center gap-4 animate-pulse">
                      <Loader2 className="animate-spin text-emerald-500" size={32} />
-                     <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Calibrating Macros...</p>
+                     <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Recalculating Macros...</p>
                  </div>
              ) : nutritionPlan ? (
                  <div className="space-y-6 relative z-10">
+                     <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                             <Scale size={12} className="text-emerald-500/50" />
+                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Baseline: {currentWeightBase}kg</span>
+                        </div>
+                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">AI Certified</span>
+                     </div>
+
                      <div className="p-4 bg-white/5 rounded-3xl border border-white/5">
-                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest block mb-1">AI Body Sync Insight</span>
                         <p className="text-[10px] text-slate-300 italic leading-relaxed">{nutritionPlan.summary}</p>
                      </div>
 
@@ -86,14 +96,14 @@ const NutritionDashboard: React.FC<{
                             <span className="text-xl font-black text-white">{Math.round(nutritionPlan.estimatedWorkoutCalories)}<span className="text-[10px] ml-1">kcal</span></span>
                         </div>
                         <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-center">
-                            <span className="text-[8px] font-black text-emerald-500/60 uppercase block mb-1">Daily Budget</span>
+                            <span className="text-[8px] font-black text-emerald-500/60 uppercase block mb-1">Daily Target</span>
                             <span className="text-xl font-black text-white">{Math.round(nutritionPlan.dailyCalorieTarget)}<span className="text-[10px] ml-1">kcal</span></span>
                         </div>
                      </div>
 
                      <div className="space-y-2">
                         {nutritionPlan.meals.map((meal, idx) => (
-                            <div key={idx} className="flex items-center gap-4 p-3 bg-white/5 rounded-2xl border border-white/5 transition-all hover:bg-white/10">
+                            <div key={idx} className="flex items-center gap-4 p-3 bg-white/5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-colors">
                                 <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center font-black text-emerald-500 text-[10px]">{idx+1}</div>
                                 <div className="flex-grow">
                                     <p className="text-xs font-black text-white uppercase">{meal.name}</p>
@@ -109,8 +119,12 @@ const NutritionDashboard: React.FC<{
                  </div>
              ) : (
                  <div className="text-center py-6 space-y-4">
-                     <p className="text-[10px] text-slate-500 font-medium px-8 leading-relaxed uppercase tracking-widest">未偵測到飲食協定。點擊下方按鈕以透過 AI 根據您的個人檔案與當前體重同步產生計畫。</p>
-                     <button onClick={handleGenerateAutomatically} className="w-full py-4 bg-emerald-500 text-slate-950 font-black rounded-2xl uppercase text-[10px] shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+                     <div className="p-4 bg-white/5 rounded-2xl border border-dashed border-white/10 mb-4">
+                        <p className="text-[10px] text-slate-500 font-medium leading-relaxed uppercase tracking-widest">
+                            AI 將依據註冊資料與 <span className="text-cyan-500 font-black">Tracker 最新體重</span> 自動同步計算攝取量。
+                        </p>
+                     </div>
+                     <button onClick={handleSyncAndGenerate} className="w-full py-4 bg-emerald-500 text-slate-950 font-black rounded-2xl uppercase text-[10px] shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
                          <Sparkles size={14} /> 同步生成 AI 飲食建議
                      </button>
                  </div>
@@ -181,6 +195,7 @@ export const MyPlanPage: React.FC<MyPlanPageProps> = ({ setPage }) => {
                 <button onClick={clearPlan} className="p-3 text-red-500/50 hover:text-red-500 transition-colors"><Trash2 size={20} /></button>
              </div>
              
+             {/* 今日訓練置頂 */}
              <div className="space-y-4">
                 <div className="flex items-center gap-3 px-4">
                     <Activity className="w-4 h-4 text-cyan-500" />
@@ -189,6 +204,7 @@ export const MyPlanPage: React.FC<MyPlanPageProps> = ({ setPage }) => {
                 <WorkoutPlanCard plan={activeWorkoutPlan} showAllDays={false} activeDayIndex={0} />
              </div>
 
+             {/* 全域飲食儀表板整合 */}
              <NutritionDashboard 
                 workoutPlan={activeWorkoutPlan} 
                 nutritionPlan={activeNutritionPlan}
