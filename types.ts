@@ -94,9 +94,8 @@ export interface WeeklyWorkout {
   exercises: { name: string; details: string; }[];
 }
 
-// Added 'volleyball' | 'tennis' | 'swimming' to fix assignability errors in constants.ts
 export interface SpecializedPlan {
-  key: 'combat' | 'basketball' | 'badminton' | 'volleyball' | 'tennis' | 'swimming';
+  key: 'combat' | 'basketball' | 'badminton';
   sport: string;
   description: string;
   primarySystems: string[];
