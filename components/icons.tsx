@@ -57,5 +57,11 @@ export {
     Copy,
     FolderLock,
     Unlock,
-    Key
+    Key,
+    Trophy,
+    Circle,
+    FlagTriangleRight,
+    Baseball,
+    Ghost,
+    Footprints
 } from 'lucide-react';

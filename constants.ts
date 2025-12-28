@@ -2,6 +2,8 @@
 import { Type } from '@google/genai';
 import type { Exercise, SpecializedPlan, RecognizedFood } from './types';
 
+// ... (STRENGTH_EXERCISES and HIIT_WORKOUT_PLAN remain the same)
+
 export const STRENGTH_EXERCISES: Exercise[] = [
     { id: 1, name: "臥推 (Bench Press)", primary: '胸', secondary: '上半身' },
     { id: 2, name: "深蹲 (Squat)", primary: '腿', secondary: '下半身' },
@@ -16,7 +18,6 @@ export const STRENGTH_EXERCISES: Exercise[] = [
 ];
 
 export const HIIT_WORKOUT_PLAN: string[] = [
-    // --- Combat / Boxing Style (Rocky Theme) ---
     "空拳直擊 (Shadow Boxing - Jab/Cross)",
     "上鉤拳連擊 (Uppercuts - Fast)",
     "左右鉤拳 (Hooks)",
@@ -27,8 +28,6 @@ export const HIIT_WORKOUT_PLAN: string[] = [
     "肘擊 (Elbow Strikes)",
     "深蹲出拳 (Squat Hold Punches)",
     "波比跳加直拳 (Burpee with Punches)",
-
-    // --- Explosive Cardio ---
     "快速跳繩 (Jump Rope / Air Skips)",
     "開合跳 (Jumping Jacks)",
     "高抬腿衝刺 (High Knees Sprint)",
@@ -43,8 +42,6 @@ export const HIIT_WORKOUT_PLAN: string[] = [
     "原地碎步跑 (Fast Feet)",
     "高腳椅踏步 (Step-ups)",
     "箱跳 (Box Jumps)",
-
-    // --- Core & Stability ---
     "平板支撐 (Plank)",
     "俄式轉體 (Russian Twist)",
     "折刀式 (V-Ups)",
@@ -57,8 +54,6 @@ export const HIIT_WORKOUT_PLAN: string[] = [
     "超人式 (Superman)",
     "平板撐體碰肩 (Plank Shoulder Taps)",
     "蜘蛛人伏地挺身 (Spiderman Push-ups)",
-    
-    // --- Strength Endurance ---
     "伏地挺身 (Push-ups)",
     "鑽石伏地挺身 (Diamond Push-ups)",
     "寬距伏地挺身 (Wide Push-ups)",
@@ -208,7 +203,6 @@ export const AI_NUTRITION_RESPONSE_SCHEMA = {
   required: ['estimatedWorkoutCalories', 'dailyCalorieTarget', 'summary', 'meals'],
 };
 
-
 export const COMBAT_SPORTS_PLAN: SpecializedPlan = {
   key: 'combat',
   sport: "格鬥運動",
@@ -324,6 +318,279 @@ export const BADMINTON_PLAN: SpecializedPlan = {
       ],
     },
   ],
+};
+
+export const VOLLEYBALL_PLAN: SpecializedPlan = {
+    key: 'volleyball',
+    sport: "排球",
+    description: "針對排球運動員設計，強化垂直彈跳、攔網反應速度、核心穩定性以及落地時的關節緩衝保護。",
+    primarySystems: ["ATP-PCr 系統", "磷酸原系統"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "起跳爆發力與落地穩定",
+        exercises: [
+          { name: "負重深度跳 (Depth Jump)", details: "4 組 x 6 次" },
+          { name: "單腿穩定平衡", details: "3 組 x 每側 30 秒" },
+          { name: "相撲深蹲跳", details: "4 組 x 10 次" },
+          { name: "藥球過頭拋擲", details: "3 組 x 12 次" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "攔網橫移與肩部穩定",
+        exercises: [
+          { name: "攔網步伐橫移 (Block Step)", details: "6 組 x 8 次" },
+          { name: "Y-W-T 肩部強化", details: "3 組 x 15 次" },
+          { name: "地雷管核心轉體", details: "3 組 x 12 次" },
+          { name: "阻力繩快速推胸", details: "4 組 x 15 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "核心張力與靈敏度",
+        exercises: [
+          { name: "敏捷梯多向訓練", details: "12 分鐘" },
+          { name: "平板支撐碰肩", details: "3 組 x 每側 15 次" },
+          { name: "跳躍緩衝練習", details: "4 組 x 10 次" },
+          { name: "快速波比跳", details: "3 組 x 15 次" },
+        ],
+      },
+    ],
+};
+
+export const TENNIS_PLAN: SpecializedPlan = {
+    key: 'tennis',
+    sport: "網球",
+    description: "模擬網球多向移動的特點，著重於橫向爆發力、單邊肢體力量平衡、核心旋轉動能以及前臂耐力。",
+    primarySystems: ["糖解系統", "ATP-PCr 系統"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "橫向爆發與單邊力量",
+        exercises: [
+          { name: "側向滑步衝刺 (Shuffle)", details: "8 組 x 10 公尺" },
+          { name: "單臂啞鈴划船", details: "4 組 x 12 次" },
+          { name: "側向弓箭步跳", details: "4 組 x 10 次" },
+          { name: "彈力帶對側拉伸", details: "3 組 x 15 次" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "旋轉動力與握力強化",
+        exercises: [
+          { name: "藥球對牆旋轉拋球", details: "4 組 x 每側 10 次" },
+          { name: "啞鈴前臂捲揚", details: "3 組 x 15 次" },
+          { name: "俄式轉體 (負重)", details: "4 組 x 20 次" },
+          { name: "土耳其起立 (半程)", details: "3 組 x 6 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "高強度間歇與敏捷",
+        exercises: [
+          { name: "折返跑 (Spider Drill)", details: "6 組" },
+          { name: "跳繩 (交叉跳)", details: "5 組 x 1 分鐘" },
+          { name: "深蹲肩推 (Thrusters)", details: "4 組 x 12 次" },
+          { name: "死蟲式核心穩定", details: "3 組 x 15 次" },
+        ],
+      },
+    ],
+};
+
+export const SWIMMING_DRYLAND_PLAN: SpecializedPlan = {
+    key: 'swimming',
+    sport: "游泳乾地",
+    description: "專為泳者在陸地進行的肌力訓練。聚焦於拉水時所需的背部力量、流體力學中的核心穩定，以及肩髖活動度。",
+    primarySystems: ["氧化系統", "糖解系統"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "背部拉力與肩部健康",
+        exercises: [
+          { name: "引體向上", details: "4 組 x 力竭" },
+          { name: "彈力帶模擬划水", details: "4 組 x 20 次" },
+          { name: "臉拉 (Face Pull)", details: "3 組 x 15 次" },
+          { name: "Y-Raise", details: "3 組 x 12 次" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "流體核心與下肢踢腿力",
+        exercises: [
+          { name: "超人式穩定 (Superman)", details: "4 組 x 45 秒" },
+          { name: "中空支撐 (Hollow Hold)", details: "4 組 x 45 秒" },
+          { name: "高腳杯深蹲", details: "4 組 x 15 次" },
+          { name: "仰臥交替抬腿", details: "3 組 x 30 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "活動度與全身耐力",
+        exercises: [
+          { name: "土耳其起立 (完整)", details: "3 組 x 每側 5 次" },
+          { name: "世界最偉大伸展", details: "3 組 x 每側 8 次" },
+          { name: "藥球砸地 (Slams)", details: "4 組 x 15 次" },
+          { name: "波比跳 (流暢模式)", details: "3 組 x 12 次" },
+        ],
+      },
+    ],
+};
+
+export const GOLF_PLAN: SpecializedPlan = {
+    key: 'golf',
+    sport: "高爾夫球",
+    description: "運用生物力學優化揮桿。強化螺旋動力鏈傳導、身體分離度（X-Factor）以及單腳負重狀態下的動態穩定性。",
+    primarySystems: ["ATP-PCr 系統", "神經肌肉控制"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "螺旋動力鏈與分離度",
+        exercises: [
+          { name: "藥球側向旋轉拋擲", details: "4 組 x 每側 8 次" },
+          { name: "半跪姿滑輪砍木", details: "3 組 x 每側 12 次" },
+          { name: "帕洛夫推 (抗旋轉)", details: "3 組 x 每側 12 次" },
+          { name: "胸椎旋轉活動度練習", details: "3 組 x 10 次" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "下肢基座與平衡穩定",
+        exercises: [
+          { name: "單腿 RDL (單臂負荷)", details: "4 組 x 每側 10 次" },
+          { name: "側向弓箭步轉體", details: "3 組 x 每側 10 次" },
+          { name: "保加利亞分腿蹲", details: "3 組 x 每側 10 次" },
+          { name: "鳥狗式 (核心控制)", details: "3 組 x 12 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "揮桿爆發力與末端減速",
+        exercises: [
+          { name: "壺鈴擺盪 (髖發力)", details: "4 組 x 15 次" },
+          { name: "藥球過頭砸地 (縱向鏈)", details: "4 組 x 10 次" },
+          { name: "跳躍緩衝練習 (落地穩定)", details: "3 組 x 10 次" },
+          { name: "地雷管單臂推舉", details: "3 組 x 每側 12 次" },
+        ],
+      },
+    ],
+};
+
+export const BASEBALL_PLAN: SpecializedPlan = {
+    key: 'baseball',
+    sport: "棒球",
+    description: "聚焦於投球與擊球所需的螺旋旋轉爆發力。包含肩袖肌群的穩定強化（防止受傷）以及強大的後鏈肌群發力。",
+    primarySystems: ["ATP-PCr 系統", "彈性勢能"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "投擲/擊球螺旋鏈爆發",
+        exercises: [
+          { name: "側向藥球爆發拋球", details: "5 組 x 每側 6 次" },
+          { name: "地雷管轉體爆發", details: "4 組 x 每側 8 次" },
+          { name: "單臂啞鈴推舉", details: "3 組 x 每側 10 次" },
+          { name: "Scapular Pull-ups (肩胛控制)", details: "3 組 x 12 次" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "後鏈發力與肩部護航",
+        exercises: [
+          { name: "六角槓硬舉", details: "4 組 x 6 次" },
+          { name: "啞鈴 I-Y-T 肩部穩定", details: "3 組 x 每側 12 次" },
+          { name: "Face Pull (面拉)", details: "3 組 x 15 次" },
+          { name: "分腿蹲 (加強跨步力)", details: "3 組 x 每側 10 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "敏捷性與動態反應",
+        exercises: [
+          { name: "60碼衝刺練習", details: "5 組" },
+          { name: "側向滑步 (Lateral Shuffle)", details: "6 組 x 10 公尺" },
+          { name: "藥球牆面反彈拋球", details: "4 組 x 10 次" },
+          { name: "平板支撐 (加強抗旋轉)", details: "3 組 x 60 秒" },
+        ],
+      },
+    ],
+};
+
+export const SOCCER_PLAN: SpecializedPlan = {
+    key: 'soccer',
+    sport: "足球",
+    description: "優化足球運動員的多向移動能力。結合反應強度（RSI）訓練與有氧/無氧混合耐力，並強化膝關節穩定度。",
+    primarySystems: ["糖解系統", "ATP-PCr 系統"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "變向速度 (COD) 與爆發",
+        exercises: [
+          { name: "T-Drill 敏捷訓練", details: "8 組" },
+          { name: "增強式深蹲跳", details: "4 組 x 8 次" },
+          { name: "側向跳躍落地穩定", details: "4 組 x 每側 6 次" },
+          { name: "北歐挺身 (預防後腿拉傷)", details: "3 組 x 8 次" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "下肢肌力與核心對抗",
+        exercises: [
+          { name: "槓鈴深蹲", details: "4 組 x 6-8 次" },
+          { name: "單腿保加利亞蹲", details: "3 組 x 每側 10 次" },
+          { name: "土耳其起立 (增加核心韌性)", details: "3 組 x 每側 5 次" },
+          { name: "直腿硬舉 (RDL)", details: "3 組 x 12 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "間歇耐力與重複衝刺",
+        exercises: [
+          { name: "15-15 間歇跑", details: "15 分鐘 (跑15s/歇15s)" },
+          { name: "箱跳 (連續跳躍)", details: "4 組 x 10 次" },
+          { name: "藥球轉體拋牆", details: "3 組 x 12 次" },
+          { name: "腹斜肌捲腹", details: "3 組 x 20 次" },
+        ],
+      },
+    ],
+};
+
+export const TABLE_TENNIS_PLAN: SpecializedPlan = {
+    key: 'table_tennis',
+    sport: "桌球",
+    description: "專注於「極短程」微敏捷與重心快速轉換。訓練快縮肌纖維徵召、神經肌肉反應速度以及核心旋轉回擊力。",
+    primarySystems: ["ATP-PCr 系統", "神經肌肉反應"],
+    schedule: [
+      {
+        day: "第一天",
+        focus: "微敏捷步法與反應",
+        exercises: [
+          { name: "原地快速碎步 (Fast Feet)", details: "6 組 x 15 秒" },
+          { name: "側向小跳躍 (Lateral Hops)", details: "4 組 x 20 秒" },
+          { name: "反應球對牆練習", details: "10 分鐘" },
+          { name: "單腿平衡 (動態干擾)", details: "3 組 x 每側 45 秒" },
+        ],
+      },
+      {
+        day: "第二天",
+        focus: "核心旋轉爆發與回位",
+        exercises: [
+          { name: "藥球側向快速拋擲", details: "4 組 x 每側 12 次" },
+          { name: "地雷管抗旋轉練習", details: "3 組 x 12 次" },
+          { name: "坐姿前臂捲揚 (增強握力/手腕)", details: "3 組 x 15 次" },
+          { name: "TRX 划船 (穩定背部)", details: "3 組 x 12 次" },
+        ],
+      },
+      {
+        day: "第三天",
+        focus: "下肢蹬轉與爆發",
+        exercises: [
+          { name: "跳躍弓箭步 (快速切換)", details: "4 組 x 12 次" },
+          { name: "相撲深蹲 (增強側向力)", details: "3 組 x 15 次" },
+          { name: "藥球砸地 (全身連貫)", details: "4 組 x 12 次" },
+          { name: "死蟲式 (深層核心)", details: "3 組 x 15 次" },
+        ],
+      },
+    ],
 };
 
 export const COMMON_FOODS: RecognizedFood[] = [
