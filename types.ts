@@ -95,7 +95,7 @@ export interface WeeklyWorkout {
 }
 
 export interface SpecializedPlan {
-  key: 'combat' | 'basketball' | 'badminton';
+  key: 'combat' | 'basketball' | 'badminton' | 'volleyball' | 'tennis' | 'swimming' | 'golf';
   sport: string;
   description: string;
   primarySystems: string[];

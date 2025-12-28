@@ -57,5 +57,8 @@ export {
     Copy,
     FolderLock,
     Unlock,
-    Key
+    Key,
+    Trophy,
+    Circle,
+    FlagTriangleRight
 } from 'lucide-react';

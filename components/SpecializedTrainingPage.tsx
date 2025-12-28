@@ -1,7 +1,7 @@
 
 import React, { useState, useContext } from 'react';
-import { Zap, Swords, Target, Feather, ArrowLeft, Bot, CheckCircle } from './icons';
-import { COMBAT_SPORTS_PLAN, BASKETBALL_PLAN, BADMINTON_PLAN } from '../constants';
+import { Zap, Swords, Target, Feather, ArrowLeft, Bot, CheckCircle, Activity, Circle, Trophy, FlagTriangleRight } from './icons';
+import { COMBAT_SPORTS_PLAN, BASKETBALL_PLAN, BADMINTON_PLAN, VOLLEYBALL_PLAN, TENNIS_PLAN, SWIMMING_DRYLAND_PLAN, GOLF_PLAN } from '../constants';
 import type { SpecializedPlan, WeeklyWorkout, WorkoutPlan, WorkoutExercise } from '../types';
 import { CompetitionPrepCoach } from './CompetitionPrepCoach';
 import { PlanContext } from '../context/PlanContext';
@@ -12,6 +12,10 @@ const plans = [
     { plan: COMBAT_SPORTS_PLAN, icon: <Swords className="w-10 h-10 text-red-400" /> },
     { plan: BASKETBALL_PLAN, icon: <Target className="w-10 h-10 text-orange-400" /> },
     { plan: BADMINTON_PLAN, icon: <Feather className="w-10 h-10 text-sky-400" /> },
+    { plan: VOLLEYBALL_PLAN, icon: <Activity className="w-10 h-10 text-yellow-400" /> },
+    { plan: TENNIS_PLAN, icon: <Trophy className="w-10 h-10 text-emerald-400" /> },
+    { plan: SWIMMING_DRYLAND_PLAN, icon: <Circle className="w-10 h-10 text-blue-400" /> },
+    { plan: GOLF_PLAN, icon: <FlagTriangleRight className="w-10 h-10 text-lime-400" /> },
 ];
 
 const EnergySystemInfo: React.FC = () => {
@@ -159,12 +163,12 @@ export const SpecializedTrainingPage: React.FC = () => {
                             <button key={plan.key} onClick={() => setSelectedPlan(plan)} className="text-left p-4 border border-slate-700 rounded-xl hover:shadow-lg hover:border-cyan-400 transition-all duration-300 transform hover:-translate-y-1 bg-slate-800">
                                 <div className="flex items-center gap-4">
                                     <div className="flex-shrink-0">{icon}</div>
-                                    <div>
+                                    <div className="flex-grow">
                                         <h3 className="text-xl font-bold text-slate-200">{plan.sport}</h3>
-                                        <p className="text-sm text-slate-400 mt-1">{plan.description}</p>
+                                        <p className="text-sm text-slate-400 mt-1 line-clamp-2">{plan.description}</p>
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {plan.primarySystems.map(system => (
-                                                <span key={system} className="text-xs font-semibold bg-cyan-400/20 text-cyan-200 px-2 py-0.5 rounded-full">{system}</span>
+                                                <span key={system} className="text-[10px] font-semibold bg-cyan-400/20 text-cyan-200 px-2 py-0.5 rounded-full">{system}</span>
                                             ))}
                                         </div>
                                     </div>
