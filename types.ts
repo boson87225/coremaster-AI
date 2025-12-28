@@ -6,10 +6,11 @@ export interface Exercise {
   secondary: string;
 }
 
-export type Page = 'home' | 'my_plan' | 'workout' | 'tracker' | 'profile' | 'ai_coach' | 'ai_planner' | 'manual_planner' | 'settings';
+export type Page = 'home' | 'my_plan' | 'workout' | 'tracker' | 'profile' | 'settings' | 'ai_planner' | 'manual_planner';
 export type WorkoutPageMode = 'cardio' | 'strength' | 'specialized';
 export type CardioMode = 'hiit' | 'liss';
 export type StrengthMode = 'primary' | 'secondary';
+export type TrainingLevel = 'Novice' | 'Pro' | 'Elite';
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -35,6 +36,7 @@ export interface WorkoutPlan {
   planTitle: string;
   planSummary: string;
   days: WorkoutDay[];
+  sportKey?: string;
 }
 
 export type WorkoutStatus = 'idle' | 'playing' | 'paused' | 'finished' | 'resting';
@@ -84,7 +86,7 @@ export interface ActivityLogItem {
   id: string;
   name: string;
   type: 'strength' | 'cardio' | 'specialized';
-  details: string; // e.g., "3 sets x 10 reps" or "30 mins"
+  details: string;
   timestamp: Date;
 }
 
@@ -95,11 +97,17 @@ export interface WeeklyWorkout {
 }
 
 export interface SpecializedPlan {
-  key: 'combat' | 'basketball' | 'badminton' | 'volleyball' | 'tennis' | 'swimming' | 'golf';
+  key: string;
   sport: string;
+  level: TrainingLevel; // 新增：訓練等級
   description: string;
   primarySystems: string[];
   schedule: WeeklyWorkout[];
+  imageUrl: string;
+  stats: { pwr: number; agi: number; end: number };
+  nutritionTips: string;
+  trainingFocus: string;
+  keyPoints: string[];
 }
 
 export interface Meal {

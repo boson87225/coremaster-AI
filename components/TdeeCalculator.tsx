@@ -1,5 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { Calculator } from './icons';
+
+import React, { useState, useContext } from 'react';
+import { Calculator, Circle } from './icons';
 import { useTranslation } from '../context/LanguageContext';
 import { PlanContext } from '../context/PlanContext';
 
@@ -18,12 +19,12 @@ export const TdeeCalculator: React.FC<TdeeCalculatorProps> = ({ onTdeeCalculated
         { value: 1.725, label: t('ACTIVITY_LEVEL_4') },
         { value: 1.9, label: t('ACTIVITY_LEVEL_5') },
     ];
-    // State for the calculator, pre-filled from userProfile if available
+
     const [gender, setGender] = useState(userProfile?.gender || 'male');
     const [age, setAge] = useState(userProfile?.age.toString() || '');
     const [weight, setWeight] = useState(userProfile?.weight.toString() || '');
     const [height, setHeight] = useState(userProfile?.height.toString() || '');
-    const [activityLevel, setActivityLevel] = useState(1.375); // Default to lightly active
+    const [activityLevel, setActivityLevel] = useState(1.375);
     const [error, setError] = useState<string | null>(null);
     
      const calculateTdee = (e: React.FormEvent) => {
@@ -50,50 +51,71 @@ export const TdeeCalculator: React.FC<TdeeCalculatorProps> = ({ onTdeeCalculated
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <form onSubmit={calculateTdee} className="space-y-4">
-                {error && <p className="text-red-400 bg-red-500/10 p-2 rounded-md text-sm">{error}</p>}
+        <div className="space-y-6 animate-fade-in text-slate-200">
+            <form onSubmit={calculateTdee} className="space-y-6">
+                {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-xl text-xs font-bold">{error}</p>}
                 
-                <div>
-                    <label className="block text-sm font-medium text-slate-300">{t('GENDER')}</label>
-                    <div className="mt-1 grid grid-cols-2 gap-3">
-                        <label className={`flex items-center p-3 border rounded-md cursor-pointer ${gender === 'male' ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-slate-700/50 border-slate-600'}`}>
-                            <input type="radio" name="gender" value="male" checked={gender === 'male'} onChange={() => setGender('male')} className="h-4 w-4 text-cyan-500 bg-slate-600 border-slate-500 focus:ring-cyan-500" />
-                            <span className="ml-3 font-medium text-slate-200">{t('MALE')}</span>
-                        </label>
-                        <label className={`flex items-center p-3 border rounded-md cursor-pointer ${gender === 'female' ? 'bg-cyan-500/10 border-cyan-400/50' : 'bg-slate-700/50 border-slate-600'}`}>
-                            <input type="radio" name="gender" value="female" checked={gender === 'female'} onChange={() => setGender('female')} className="h-4 w-4 text-cyan-500 bg-slate-600 border-slate-500 focus:ring-cyan-500" />
-                            <span className="ml-3 font-medium text-slate-200">{t('FEMALE')}</span>
-                        </label>
+                <div className="space-y-3">
+                    <label className="text-sm font-bold text-slate-400 block px-1">{t('GENDER')}</label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <button 
+                            type="button"
+                            onClick={() => setGender('male')}
+                            className={`flex items-center justify-start gap-4 p-5 rounded-[1.5rem] border-2 transition-all group ${gender === 'male' ? 'bg-cyan-500/10 border-cyan-500' : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600'}`}
+                        >
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${gender === 'male' ? 'border-cyan-400 bg-cyan-400' : 'border-slate-600'}`}>
+                                {gender === 'male' && <div className="w-2 h-2 rounded-full bg-slate-900"></div>}
+                            </div>
+                            <span className={`text-lg font-black uppercase tracking-tighter ${gender === 'male' ? 'text-white' : 'text-slate-500'}`}>{t('MALE')}</span>
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={() => setGender('female')}
+                            className={`flex items-center justify-start gap-4 p-5 rounded-[1.5rem] border-2 transition-all group ${gender === 'female' ? 'bg-cyan-500/10 border-cyan-500' : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600'}`}
+                        >
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${gender === 'female' ? 'border-cyan-400 bg-cyan-400' : 'border-slate-600'}`}>
+                                {gender === 'female' && <div className="w-2 h-2 rounded-full bg-slate-900"></div>}
+                            </div>
+                            <span className={`text-lg font-black uppercase tracking-tighter ${gender === 'female' ? 'text-white' : 'text-slate-500'}`}>{t('FEMALE')}</span>
+                        </button>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
-                    <div>
-                        <label htmlFor="age" className="block text-sm font-medium text-slate-300">{t('AGE')}</label>
-                        <input id="age" type="number" value={age} onChange={e => setAge(e.target.value)} placeholder={t('AGE_UNIT')} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200" />
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{t('AGE')}</label>
+                        <input type="number" value={age} onChange={e => setAge(e.target.value)} className="w-full p-4 bg-slate-800/60 border-2 border-slate-700/50 rounded-2xl text-xl font-black text-white outline-none focus:border-cyan-500 transition-all text-center" />
                     </div>
-                    <div>
-                        <label htmlFor="weight" className="block text-sm font-medium text-slate-300">{t('WEIGHT')}</label>
-                        <input id="weight" type="number" value={weight} onChange={e => setWeight(e.target.value)} placeholder={t('WEIGHT_UNIT')} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200" />
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{t('WEIGHT')}</label>
+                        <input type="number" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} className="w-full p-4 bg-slate-800/60 border-2 border-slate-700/50 rounded-2xl text-xl font-black text-white outline-none focus:border-cyan-500 transition-all text-center" />
                     </div>
-                    <div>
-                        <label htmlFor="height" className="block text-sm font-medium text-slate-300">{t('HEIGHT')}</label>
-                        <input id="height" type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder={t('HEIGHT_UNIT')} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200" />
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{t('HEIGHT')}</label>
+                        <input type="number" value={height} onChange={e => setHeight(e.target.value)} className="w-full p-4 bg-slate-800/60 border-2 border-slate-700/50 rounded-2xl text-xl font-black text-white outline-none focus:border-cyan-500 transition-all text-center" />
                     </div>
                 </div>
 
-                <div>
-                    <label htmlFor="activity" className="block text-sm font-medium text-slate-300">{t('ACTIVITY_LEVEL')}</label>
-                    <select id="activity" value={activityLevel} onChange={e => setActivityLevel(Number(e.target.value))} className="mt-1 block w-full p-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-slate-200">
-                        {activityLevels.map(level => (
-                            <option key={level.value} value={level.value}>{level.label}</option>
-                        ))}
-                    </select>
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">{t('ACTIVITY_LEVEL')}</label>
+                    <div className="relative">
+                        <select 
+                            value={activityLevel} 
+                            onChange={e => setActivityLevel(Number(e.target.value))} 
+                            className="w-full p-5 bg-slate-800/60 border-2 border-slate-700/50 rounded-2xl text-sm font-bold text-white outline-none focus:border-cyan-500 transition-all appearance-none pr-10"
+                        >
+                            {activityLevels.map(level => (
+                                <option key={level.value} value={level.value}>{level.label}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600">
+                            <Circle size={8} className="fill-current" />
+                        </div>
+                    </div>
                 </div>
 
-                <button type="submit" className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-full shadow-lg text-lg font-bold text-white bg-cyan-600 hover:bg-cyan-700 transition">
-                    <Calculator className="w-5 h-5" />
+                <button type="submit" className="w-full py-5 bg-cyan-500 text-slate-950 font-black rounded-3xl uppercase tracking-[0.2em] text-sm shadow-xl shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <Calculator size={18} />
                     {t('CALCULATE_TDEE_BUTTON')}
                 </button>
             </form>

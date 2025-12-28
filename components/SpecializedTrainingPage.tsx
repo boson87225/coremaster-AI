@@ -1,184 +1,199 @@
 
-import React, { useState, useContext } from 'react';
-import { Zap, Swords, Target, Feather, ArrowLeft, Bot, CheckCircle, Activity, Circle, Trophy, FlagTriangleRight } from './icons';
-import { COMBAT_SPORTS_PLAN, BASKETBALL_PLAN, BADMINTON_PLAN, VOLLEYBALL_PLAN, TENNIS_PLAN, SWIMMING_DRYLAND_PLAN, GOLF_PLAN } from '../constants';
-import type { SpecializedPlan, WeeklyWorkout, WorkoutPlan, WorkoutExercise } from '../types';
+import React, { useState, useContext, useMemo } from 'react';
+import { Zap, Swords, ArrowLeft, Bot, CheckCircle, BrainCircuit, Loader2, Sparkles, Crosshair, ShieldCheck, List, Target, Flame, Activity, Wind, Trophy, ChevronDown } from './icons';
+import { ALL_SPECIALIZED_PLANS } from '../constants';
+import type { SpecializedPlan, WeeklyWorkout, WorkoutPlan, WorkoutExercise, TrainingLevel } from '../types';
 import { CompetitionPrepCoach } from './CompetitionPrepCoach';
 import { PlanContext } from '../context/PlanContext';
 import { useTranslation } from '../context/LanguageContext';
 
-
-const plans = [
-    { plan: COMBAT_SPORTS_PLAN, icon: <Swords className="w-10 h-10 text-red-400" /> },
-    { plan: BASKETBALL_PLAN, icon: <Target className="w-10 h-10 text-orange-400" /> },
-    { plan: BADMINTON_PLAN, icon: <Feather className="w-10 h-10 text-sky-400" /> },
-    { plan: VOLLEYBALL_PLAN, icon: <Activity className="w-10 h-10 text-yellow-400" /> },
-    { plan: TENNIS_PLAN, icon: <Trophy className="w-10 h-10 text-emerald-400" /> },
-    { plan: SWIMMING_DRYLAND_PLAN, icon: <Circle className="w-10 h-10 text-blue-400" /> },
-    { plan: GOLF_PLAN, icon: <FlagTriangleRight className="w-10 h-10 text-lime-400" /> },
-];
-
-const EnergySystemInfo: React.FC = () => {
-    const { t } = useTranslation();
-    const systems = [
-        { name: t('ENERGY_SYSTEM_ATP_NAME'), duration: t('ENERGY_SYSTEM_ATP_DURATION'), example: t('ENERGY_SYSTEM_ATP_EXAMPLE'), color: "bg-red-900/50 text-red-300", icon: "💥" },
-        { name: t('ENERGY_SYSTEM_GLYCO_NAME'), duration: t('ENERGY_SYSTEM_GLYCO_DURATION'), example: t('ENERGY_SYSTEM_GLYCO_EXAMPLE'), color: "bg-yellow-900/50 text-yellow-300", icon: "🚀" },
-        { name: t('ENERGY_SYSTEM_OXI_NAME'), duration: t('ENERGY_SYSTEM_OXI_DURATION'), example: t('ENERGY_SYSTEM_OXI_EXAMPLE'), color: "bg-green-900/50 text-green-300", icon: "🔋" },
-    ];
-    return (
-        <details className="p-4 bg-slate-700/50 rounded-xl border border-slate-600 text-sm text-slate-300 open:pb-4 transition">
-            <summary className="font-bold cursor-pointer text-base">{t('ENERGY_SYSTEM_TITLE')}</summary>
-            <div className="mt-4 space-y-4 animate-fade-in">
-                <p className="text-slate-400">
-                    {t('ENERGY_SYSTEM_DESC')}
-                </p>
-                {systems.map((s, index) => (
-                    <div key={index} className={`p-3 rounded-lg ${s.color}`}>
-                        <p className="font-extrabold flex items-center mb-1"><span className="mr-2 text-lg">{s.icon}</span> {s.name}</p>
-                        <ul className="list-disc list-inside text-xs space-y-1 ml-4">
-                            <li><span className="font-semibold">{t('ENERGY_SYSTEM_DURATION_LABEL')}</span> {s.duration}</li>
-                            <li><span className="font-semibold">{t('ENERGY_SYSTEM_EXAMPLE_LABEL')}</span> {s.example}</li>
-                        </ul>
-                    </div>
-                ))}
-            </div>
-        </details>
-    );
-};
-
-const PlanViewer: React.FC<{ plan: SpecializedPlan; onBack: () => void }> = ({ plan, onBack }) => {
-    const [showPrepCoach, setShowPrepCoach] = useState(false);
-    const { setActiveWorkoutPlan } = useContext(PlanContext);
-    const [isPlanSet, setIsPlanSet] = useState(false);
-    const { t } = useTranslation();
-
-    const convertToWorkoutPlan = (specializedPlan: SpecializedPlan): WorkoutPlan => {
-        const workoutDays = specializedPlan.schedule.map((day, index) => {
-            const exercises: WorkoutExercise[] = day.exercises.map(ex => {
-                const parts = ex.details.split('x');
-                const sets = parts[0]?.trim() || 'N/A';
-                const reps = parts[1]?.trim() || 'N/A';
-                return {
-                    name: ex.name,
-                    sets: sets,
-                    reps: reps,
-                    rest: '60s',
-                    notes: t('SPECIALIZED_PLAN_NOTE', { sport: specializedPlan.sport }),
-                };
-            });
-            return {
-                day: index + 1,
-                title: day.focus,
-                focus: specializedPlan.sport,
-                exercises: exercises,
-            };
-        });
-
-        return {
-            planTitle: t('SPECIALIZED_PLAN_TITLE', { sport: specializedPlan.sport }),
-            planSummary: specializedPlan.description,
-            days: workoutDays,
-        };
-    };
-    
-    const handleSetPlan = () => {
-        const workoutPlan = convertToWorkoutPlan(plan);
-        setActiveWorkoutPlan(workoutPlan);
-        setIsPlanSet(true);
-        setTimeout(() => setIsPlanSet(false), 2000); // Reset button state after 2 seconds
-    };
-
-    return (
-        <div className="animate-fade-in space-y-4">
-            <button onClick={onBack} className="flex items-center gap-2 text-cyan-400 font-semibold hover:underline">
-                <ArrowLeft size={18} /> {t('BACK_TO_SELECTION')}
-            </button>
-            <div className="text-center p-4 bg-slate-700/50 rounded-lg border border-slate-600">
-                <h3 className="text-2xl font-bold text-cyan-300">{t('SPECIALIZED_PLAN_TITLE', { sport: plan.sport })}</h3>
-                <p className="mt-2 text-slate-400 max-w-prose mx-auto">{plan.description}</p>
-            </div>
-             <button
-                onClick={handleSetPlan}
-                disabled={isPlanSet}
-                className={`w-full flex justify-center items-center gap-2 py-3 px-4 border rounded-full shadow-lg text-lg font-bold text-white transition-colors duration-300 ${
-                    isPlanSet 
-                    ? 'bg-green-700 border-green-600 cursor-not-allowed' 
-                    : 'bg-cyan-600 hover:bg-cyan-700 border-transparent'
-                }`}
-            >
-                <CheckCircle className="w-6 h-6" />
-                {isPlanSet ? t('PLAN_SET_SUCCESS') : t('ADOPT_THIS_PLAN')}
-            </button>
-            <div className="space-y-4">
-                {plan.schedule.map((day: WeeklyWorkout, index: number) => (
-                    <div key={index} className="bg-slate-800 border border-slate-700 shadow-sm rounded-xl overflow-hidden">
-                        <div className="p-3 bg-slate-700/50 border-b border-slate-700">
-                            <h4 className="text-lg font-bold text-slate-200">{day.day}: {day.focus}</h4>
-                        </div>
-                        <ul className="divide-y divide-slate-700 p-3">
-                            {day.exercises.map((ex, index) => (
-                                <li key={index} className="py-2 flex justify-between items-center">
-                                    <span className="font-medium text-slate-300">{ex.name}</span>
-                                    <span className="text-sm font-semibold text-slate-300 bg-slate-600 px-2 py-1 rounded-full">{ex.details}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-            </div>
-
-            {plan.key === 'combat' && !showPrepCoach && (
-                <button
-                    onClick={() => setShowPrepCoach(true)}
-                    className="w-full flex justify-center items-center gap-2 mt-4 py-3 px-4 border border-transparent rounded-full shadow-lg text-md font-bold text-white bg-red-600 hover:bg-red-700 transition"
-                >
-                    <Bot className="w-5 h-5" />
-                    {t('OPEN_COMPETITION_PREP_AI')}
-                </button>
-            )}
-            {showPrepCoach && <CompetitionPrepCoach onClose={() => setShowPrepCoach(false)} />}
+const StatBar: React.FC<{ label: string, value: number, color: string }> = ({ label, value, color }) => (
+    <div className="space-y-1">
+        <div className="flex justify-between text-[7px] font-black uppercase tracking-widest text-slate-500">
+            <span>{label}</span>
+            <span>{value}%</span>
         </div>
-    );
-};
+        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+            <div className={`h-full transition-all duration-1000 ${color} shadow-[0_0_8px_rgba(255,255,255,0.2)]`} style={{ width: `${value}%` }}></div>
+        </div>
+    </div>
+);
 
 export const SpecializedTrainingPage: React.FC = () => {
-    const [selectedPlan, setSelectedPlan] = useState<SpecializedPlan | null>(null);
+    const { setActiveWorkoutPlan } = useContext(PlanContext);
     const { t } = useTranslation();
+    
+    // UI 選擇狀態
+    const [selectedSport, setSelectedSport] = useState<string>("格鬥");
+    const [selectedLevel, setSelectedLevel] = useState<TrainingLevel>("Novice");
+    const [status, setStatus] = useState<'idle' | 'linking' | 'success'>('idle');
+    const [showPrepCoach, setShowPrepCoach] = useState(false);
+
+    // 獲取獨特運動清單
+    const sports = useMemo(() => Array.from(new Set(ALL_SPECIALIZED_PLANS.map(p => p.sport))), []);
+    
+    // 根據運動與等級過濾計畫
+    const currentPlan = useMemo(() => 
+        ALL_SPECIALIZED_PLANS.find(p => p.sport === selectedSport && p.level === selectedLevel) || 
+        ALL_SPECIALIZED_PLANS.find(p => p.sport === selectedSport) || 
+        ALL_SPECIALIZED_PLANS[0]
+    , [selectedSport, selectedLevel]);
+
+    const handleSetPlan = () => {
+        setStatus('linking');
+        setTimeout(() => {
+            const workoutDays = currentPlan.schedule.map((day, index) => ({
+                day: index + 1,
+                title: day.focus,
+                focus: `${currentPlan.sport} (${currentPlan.level})`,
+                exercises: day.exercises.map(ex => {
+                    const parts = ex.details.split('x');
+                    return {
+                        name: ex.name,
+                        sets: parts[0]?.trim() || '3',
+                        reps: parts[1]?.trim() || '12',
+                        rest: '60s',
+                        notes: `Level: ${currentPlan.level} 專項訓練`,
+                    };
+                }),
+            }));
+
+            const workoutPlan: WorkoutPlan = {
+                planTitle: `${currentPlan.sport} ${currentPlan.level} 強化方案`,
+                planSummary: currentPlan.description,
+                days: workoutDays,
+                sportKey: currentPlan.key
+            };
+
+            setActiveWorkoutPlan(workoutPlan);
+            setStatus('success');
+            setTimeout(() => setStatus('idle'), 3000);
+        }, 1200);
+    };
 
     return (
-        <section className="p-4 md:p-6 bg-slate-800/50 backdrop-blur-lg border border-slate-700 rounded-2xl max-w-lg mx-auto space-y-6">
-            <h2 className="text-2xl font-bold text-cyan-300 mb-4 border-b border-slate-700 pb-3 flex items-center">
-                <Zap className="w-6 h-6 mr-2" /> {t('SPECIALIZED_TRAINING_TITLE')}
-            </h2>
-
-            {selectedPlan ? (
-                <PlanViewer plan={selectedPlan} onBack={() => setSelectedPlan(null)} />
-            ) : (
-                <div className="space-y-6 animate-fade-in">
-                    <p className="text-slate-400">
-                        {t('SPECIALIZED_TRAINING_DESC')}
-                    </p>
-                    <div className="grid grid-cols-1 gap-4">
-                        {plans.map(({ plan, icon }) => (
-                            <button key={plan.key} onClick={() => setSelectedPlan(plan)} className="text-left p-4 border border-slate-700 rounded-xl hover:shadow-lg hover:border-cyan-400 transition-all duration-300 transform hover:-translate-y-1 bg-slate-800">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex-shrink-0">{icon}</div>
-                                    <div className="flex-grow">
-                                        <h3 className="text-xl font-bold text-slate-200">{plan.sport}</h3>
-                                        <p className="text-sm text-slate-400 mt-1 line-clamp-2">{plan.description}</p>
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {plan.primarySystems.map(system => (
-                                                <span key={system} className="text-[10px] font-semibold bg-cyan-400/20 text-cyan-200 px-2 py-0.5 rounded-full">{system}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>
+        <div className="space-y-6 animate-fade-in pb-10">
+            {/* 1. 運動類別選擇 - 改為下拉式選單 */}
+            <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2">運動類別 (Sports Unit)</label>
+                <div className="relative">
+                    <select 
+                        value={selectedSport}
+                        onChange={(e) => setSelectedSport(e.target.value)}
+                        className="w-full bg-slate-800/80 border border-white/10 p-5 rounded-[1.5rem] text-sm font-black text-white uppercase tracking-widest outline-none appearance-none focus:border-cyan-500 transition-all"
+                    >
+                        {sports.map(s => (
+                            <option key={s} value={s}>{s}</option>
                         ))}
+                    </select>
+                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-cyan-400">
+                        <ChevronDown size={18} />
                     </div>
-                    <EnergySystemInfo />
                 </div>
+            </div>
+
+            {/* 2. 等級引導選擇 */}
+            <div className="bg-slate-900/60 p-1.5 rounded-[2rem] border border-white/5 flex gap-1">
+                {(['Novice', 'Pro', 'Elite'] as TrainingLevel[]).map(lv => (
+                    <button
+                        key={lv}
+                        onClick={() => setSelectedLevel(lv)}
+                        className={`flex-1 py-3 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] transition-all ${
+                            selectedLevel === lv 
+                            ? 'bg-cyan-500 text-slate-950 shadow-inner' 
+                            : 'text-slate-600 hover:text-slate-400'
+                        }`}
+                    >
+                        {lv}
+                    </button>
+                ))}
+            </div>
+
+            {/* 3. 計畫預覽卡片 */}
+            <div className="relative h-64 rounded-[3rem] overflow-hidden border border-white/10 group shadow-2xl">
+                <img src={currentPlan.imageUrl} alt={currentPlan.sport} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                <div className="absolute bottom-8 left-8 right-8">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="px-3 py-1 bg-cyan-500 text-slate-950 text-[8px] font-black uppercase rounded-full">{currentPlan.level}</span>
+                        <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Protocol Active</span>
+                    </div>
+                    <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{currentPlan.sport} 強化</h3>
+                    <p className="text-[11px] text-slate-300 mt-2 line-clamp-2 italic font-medium leading-relaxed">{currentPlan.description}</p>
+                </div>
+            </div>
+
+            {/* 4. 數據與能力指標 */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-6 bg-slate-900/40 rounded-[2.5rem] border border-white/10 space-y-4 shadow-xl">
+                    <StatBar label="Power" value={currentPlan.stats.pwr} color="bg-red-500" />
+                    <StatBar label="Agility" value={currentPlan.stats.agi} color="bg-yellow-500" />
+                    <StatBar label="Endurance" value={currentPlan.stats.end} color="bg-cyan-500" />
+                </div>
+                <div className="p-6 bg-slate-900/40 rounded-[2.5rem] border border-white/10 flex flex-col justify-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Activity size={14} className="text-cyan-400" />
+                        <span className="text-[9px] font-black text-white uppercase">每日動作: {currentPlan.schedule[0].exercises.length}項</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Zap size={14} className="text-yellow-400" />
+                        <span className="text-[9px] font-black text-white uppercase">強度: {currentPlan.level === 'Elite' ? '極限' : currentPlan.level === 'Pro' ? '高' : '中'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* 5. 動作預覽 */}
+            <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">訓練序列預覽</h4>
+                {currentPlan.schedule.map((day, idx) => (
+                    <div key={idx} className="glass rounded-[2.5rem] border border-white/5 overflow-hidden transition-all hover:border-cyan-500/30 shadow-lg">
+                        <div className="px-6 py-4 bg-white/5 flex justify-between items-center border-b border-white/5">
+                            <span className="text-xs font-black text-white uppercase italic">{day.day}: {day.focus}</span>
+                            <Trophy size={14} className="text-cyan-500/50" />
+                        </div>
+                        <div className="p-6 grid gap-4">
+                            {day.exercises.map((ex, eIdx) => (
+                                <div key={eIdx} className="flex justify-between items-center group">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-cyan-500 transition-colors"></div>
+                                        <span className="text-[11px] font-medium text-slate-300 group-hover:text-white transition-colors">{ex.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-black text-slate-500">{ex.details}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* 6. 啟動按鈕 */}
+            <button
+                onClick={handleSetPlan}
+                disabled={status !== 'idle'}
+                className={`w-full py-6 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm transition-all shadow-2xl ${
+                    status === 'success' ? 'bg-emerald-500 text-slate-950' : 'bg-white text-slate-950 hover:bg-cyan-400 active:scale-95'
+                }`}
+            >
+                {status === 'linking' ? (
+                    <span className="flex items-center justify-center gap-3">
+                        <Loader2 size={20} className="animate-spin" /> SYNCHRONIZING...
+                    </span>
+                ) : status === 'success' ? (
+                    <span className="flex items-center justify-center gap-3">
+                        <CheckCircle size={20} /> PROTOCOL LOADED
+                    </span>
+                ) : (
+                    `下載 ${currentPlan.level} 級方案`
+                )}
+            </button>
+
+            {selectedSport === '格鬥' && (
+                <button onClick={() => setShowPrepCoach(true)} className="w-full py-4 bg-red-600/10 border border-red-500/20 rounded-[2rem] text-[9px] font-black text-red-400 uppercase tracking-[0.3em] hover:bg-red-600/20 transition-all">
+                    開啟競技備賽 AI 助理
+                </button>
             )}
-        </section>
+            
+            {showPrepCoach && <CompetitionPrepCoach onClose={() => setShowPrepCoach(false)} />}
+        </div>
     );
 };

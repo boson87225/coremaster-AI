@@ -60,5 +60,6 @@ export {
     Key,
     Trophy,
     Circle,
-    FlagTriangleRight
+    FlagTriangleRight,
+    Info
 } from 'lucide-react';

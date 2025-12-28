@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type, type Chat } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { 
     AI_COACH_SYSTEM_INSTRUCTION, 
     AI_PLANNER_RESPONSE_SCHEMA, 
@@ -14,16 +14,12 @@ const CUSTOM_KEY_STORAGE_KEY = 'coremaster_custom_api_key';
 
 /**
  * 取得當前有效的 API Key
- * 優先級：
- * 1. 使用者在 UI 手動輸入並存於 localStorage 的 Key (最安全，不經過 GitHub)
- * 2. 部署環境中的 process.env.API_KEY (Vercel 設定的環境變數)
  */
 export const getEffectiveApiKey = () => {
     if (typeof window !== 'undefined') {
         const localKey = localStorage.getItem(CUSTOM_KEY_STORAGE_KEY);
         if (localKey && localKey.trim() !== "") return localKey.trim();
     }
-    // 嚴禁在此處回傳任何寫死的 "AIza..." 字串
     return process.env.API_KEY || "";
 };
 
@@ -48,7 +44,7 @@ export const checkHasApiKey = async (): Promise<boolean> => {
 };
 
 /**
- * 每次呼叫 API 前動態初始化，確保抓到最新（例如使用者剛手動更新）的 Key
+ * 每次呼叫 API 前動態初始化
  */
 const getAiClient = () => {
     const apiKey = getEffectiveApiKey();
@@ -64,21 +60,22 @@ const getAiClient = () => {
 const handleAiError = async (error: any) => {
     const msg = error.toString().toLowerCase();
     
-    // 如果 API 回傳 403 (Forbidden) 或 401 (Unauthorized)
-    // 這通常代表金鑰已被 Google 因暴露或配額問題封鎖
     if (msg.includes("403") || msg.includes("401") || msg.includes("api_key_invalid")) {
         window.dispatchEvent(new CustomEvent('coremaster-api-revoked', { 
-            detail: { message: "你的 API 金鑰可能已被 Google 撤銷或限制。請前往設定更換金鑰，或確保你已在 Google Cloud 設定網域限制。" } 
+            detail: { message: "你的 API 金鑰可能已被 Google 撤銷或限制。請前往設定更換金鑰。" } 
         }));
     }
     throw error;
 };
 
-const buildGeminiHistory = (messages: ChatMessage[]) => {
-  return messages.map(msg => ({
-    role: msg.role,
+// Convert history to format expected by generateContent
+const buildHistoryContents = (history: ChatMessage[], message: string) => {
+  const contents = history.map(msg => ({
+    role: msg.role === 'user' ? 'user' : 'model',
     parts: [{ text: msg.text }]
   }));
+  contents.push({ role: 'user', parts: [{ text: message }] });
+  return contents;
 };
 
 /**
@@ -88,7 +85,6 @@ export const triggerKeySetup = async () => {
     if (typeof window !== 'undefined' && (window as any).aistudio?.openSelectKey) {
         await (window as any).aistudio.openSelectKey();
     } else {
-        // 如果是在一般網頁環境，則引導至設定頁面
         window.dispatchEvent(new CustomEvent('coremaster-request-settings'));
     }
 };
@@ -96,12 +92,15 @@ export const triggerKeySetup = async () => {
 export const getAiCoachResponseStream = async (history: ChatMessage[], message: string) => {
   try {
     const ai = getAiClient();
-    const chat: Chat = ai.chats.create({
+    // Use generateContentStream for text tasks with context history
+    return await ai.models.generateContentStream({
       model: 'gemini-3-flash-preview',
-      history: buildGeminiHistory(history),
-      config: { systemInstruction: AI_COACH_SYSTEM_INSTRUCTION }
+      contents: buildHistoryContents(history, message),
+      config: { 
+        systemInstruction: AI_COACH_SYSTEM_INSTRUCTION,
+        temperature: 0.8
+      }
     });
-    return await chat.sendMessageStream({ message });
   } catch (e) {
     return handleAiError(e);
   }

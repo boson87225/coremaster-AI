@@ -1,134 +1,20 @@
-import React, { useContext } from 'react';
+
+import React, { useContext, useMemo } from 'react';
 import { WorkoutContext } from '../context/WorkoutContext';
 import { PlanContext } from '../context/PlanContext';
-import { ChevronDown, ChevronUp, Pause, Play, SkipForward, X, Clock, Activity } from './icons';
+import { ChevronDown, ChevronUp, Pause, Play, SkipForward, X, Clock, Activity, BrainCircuit, Zap, Trophy } from './icons';
 import { formatTime } from '../utils/time';
 import { useTranslation } from '../context/LanguageContext';
 import { BodyAvatar, AvatarAction } from './BodyAvatar';
 
-// Helper function to map exercise names (English or Chinese) to avatar actions
+// 偵測動作
 const detectActionFromTitle = (title: string): AvatarAction => {
     const t = title.toLowerCase();
-
-    // 0. Combat / Boxing (Priority)
-    if (
-        t.includes('box') || t.includes('punch') || t.includes('jab') || t.includes('cross') || 
-        t.includes('hook') || t.includes('upper') || t.includes('fight') || t.includes('combat') || 
-        t.includes('kick') || t.includes('strike') || t.includes('拳') || t.includes('擊')
-    ) {
-        return 'boxing';
-    }
-
-    // 1. Shoulders / Vertical Push
-    if (
-        t.includes('overhead') || t.includes('military') || t.includes('shoulder press') || t.includes('肩推') || 
-        t.includes('push press') || t.includes('jerk') || t.includes('挺舉')
-    ) {
-        return 'press';
-    }
-
-    // 2. Lateral Raises / Flys
-    if (
-        t.includes('raise') || t.includes('lateral') || t.includes('flat') || t.includes('側平舉') ||
-        t.includes('fly') || t.includes('飛鳥') || t.includes('pec deck') || t.includes('夾胸')
-    ) {
-        return 'lateral';
-    }
-
-    // 3. Vertical Pulls (Pullups / Pulldowns)
-    if (
-        t.includes('pull-up') || t.includes('chin-up') || t.includes('pull up') || t.includes('引體') ||
-        t.includes('pulldown') || t.includes('pull down') || t.includes('下拉')
-    ) {
-        return 'pullup';
-    }
-
-    // 4. Horizontal Pulls (Rows)
-    if (
-        t.includes('row') || t.includes('划船') || 
-        t.includes('face pull') || t.includes('面拉') ||
-        t.includes('renegade')
-    ) {
-        return 'row';
-    }
-
-    // 5. Horizontal Push (Bench / Pushups)
-    if (
-        t.includes('bench') || t.includes('chest press') || t.includes('臥推') || t.includes('卧推') ||
-        t.includes('floor press')
-    ) {
-        return 'bench';
-    }
-    if (
-        t.includes('push-up') || t.includes('push up') || t.includes('伏地挺身') || 
-        t.includes('burpee') || t.includes('波比') || t.includes('mountain')
-    ) {
-        return 'pushup';
-    }
-
-    // 6. Arms (Biceps/Triceps)
-    if (
-        t.includes('curl') || t.includes('彎舉') || t.includes('bicep') || t.includes('二頭')
-    ) {
-        return 'curl';
-    }
-    if (
-        t.includes('tricep') || t.includes('extension') || t.includes('pushdown') || 
-        t.includes('skull') || t.includes('dip') || t.includes('三頭') || t.includes('下壓') || t.includes('撐體')
-    ) {
-        return 'extension';
-    }
-
-    // 7. Legs (Squat / Lunge / Hinge)
-    if (
-        t.includes('deadlift') || t.includes('hard pull') || t.includes('硬舉') || 
-        t.includes('rdl') || t.includes('good morning') || t.includes('clean')
-    ) {
-        if(t.includes('shrug') || t.includes('trap')) return 'shrug';
-        return 'deadlift';
-    }
-    if (
-        t.includes('lunge') || t.includes('split') || t.includes('bulgarian') || t.includes('弓箭步') || t.includes('分腿')
-    ) {
-        return 'lunge';
-    }
-    if (
-        t.includes('squat') || t.includes('深蹲') || t.includes('leg press') || t.includes('腿舉') ||
-        t.includes('step') || t.includes('calf') || t.includes('提踵')
-    ) {
-        return 'squat';
-    }
-
-    // 8. Core
-    if (
-        t.includes('plank') || t.includes('平板') || t.includes('bridge') || t.includes('橋')
-    ) {
-        return 'plank';
-    }
-    if (
-        t.includes('crunch') || t.includes('sit-up') || t.includes('abs') || t.includes('腹') ||
-        t.includes('leg raise') || t.includes('抬腿') || t.includes('twist') || t.includes('轉體') ||
-        t.includes('v-up')
-    ) {
-        return 'crutches';
-    }
-
-    // 9. Cardio / Dynamic
-    if (
-        t.includes('run') || t.includes('jog') || t.includes('sprint') || t.includes('跑') || t.includes('衝刺') || t.includes('shuttle')
-    ) {
-        return 'running';
-    }
-    if (
-        t.includes('jump') || t.includes('hop') || t.includes('ski') || t.includes('jack') || 
-        t.includes('cardio') || t.includes('hiit') || t.includes('跳') || t.includes('繩')
-    ) {
-        return 'jumping';
-    }
-    
-    if (t.includes('shrug') || t.includes('聳肩')) return 'shrug';
-
-    // Default fallback
+    if (t.includes('box') || t.includes('拳') || t.includes('擊')) return 'boxing';
+    if (t.includes('run') || t.includes('跑')) return 'running';
+    if (t.includes('squat') || t.includes('蹲')) return 'squat';
+    if (t.includes('jump') || t.includes('跳')) return 'jumping';
+    if (t.includes('push') || t.includes('伏地')) return 'pushup';
     return 'idle';
 };
 
@@ -143,16 +29,13 @@ export const WorkoutPlayer: React.FC = () => {
 
   const currentDay = currentPlan.days[currentDayIndex];
   const currentExercise = currentDay.exercises[currentExerciseIndex];
+  const isSpecialized = !!currentPlan.sportKey;
 
-  // Determine avatar action based on workout status AND exercise name
   let avatarAction: AvatarAction = 'idle';
   if (status === 'playing') {
       avatarAction = detectActionFromTitle(currentExercise.name);
-  } else if (status === 'resting' || status === 'paused') {
-      avatarAction = 'idle';
   }
 
-  // Use profile defaults if not available
   const avatarProps = {
       gender: userProfile?.gender || 'male',
       weight: userProfile?.weight || 75,
@@ -160,95 +43,109 @@ export const WorkoutPlayer: React.FC = () => {
   };
 
   return (
-    <div className={`fixed left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-lg transition-all duration-500 ease-in-out ${isExpanded ? 'bottom-8' : 'bottom-24'}`}>
-      <div className="glass rounded-[32px] border border-white/10 shadow-2xl overflow-hidden glow-cyan">
-        {/* Header Indicator */}
-        <div className="h-1 w-full bg-slate-800">
-            <div className="h-full bg-cyan-500 transition-all duration-500" style={{ width: `${((currentExerciseIndex + 1) / currentDay.exercises.length) * 100}%` }}></div>
+    <div className={`fixed left-1/2 -translate-x-1/2 z-[60] w-[94%] max-w-lg transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isExpanded ? 'bottom-8' : 'bottom-24'}`}>
+      <div className={`glass rounded-[3rem] border shadow-2xl overflow-hidden ${isSpecialized ? 'border-cyan-500/30' : 'border-white/10'}`}>
+        {/* 進度條 */}
+        <div className="h-1.5 w-full bg-slate-900/50">
+            <div className={`h-full transition-all duration-1000 ${isSpecialized ? 'bg-cyan-500 glow-cyan' : 'bg-white'}`} 
+                 style={{ width: `${((currentExerciseIndex + 1) / currentDay.exercises.length) * 100}%` }}></div>
         </div>
 
-        <div className="p-4">
-          {/* Main Info Row */}
+        <div className="p-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-grow min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                    <Activity size={12} className="text-cyan-400 animate-pulse" />
-                    <span className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-widest">
-                        {status === 'resting' ? 'System Cooling' : 'Active Protocol'}
+                <div className="flex items-center gap-2 mb-1.5">
+                    {isSpecialized ? <Zap size={12} className="text-cyan-400 animate-pulse" /> : <Activity size={12} className="text-white/50" />}
+                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isSpecialized ? 'text-cyan-400' : 'text-slate-500'}`}>
+                        {status === 'resting' ? 'Neural Cooling' : isSpecialized ? 'Sport Protocol Active' : 'Active Workout'}
                     </span>
                 </div>
-                <h4 className="text-lg font-extrabold text-white truncate uppercase tracking-tight">
+                <h4 className="text-xl font-black text-white truncate uppercase italic tracking-tighter">
                     {status === 'resting' ? t('PLAYER_STATUS_RESTING') : currentExercise.name}
                 </h4>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
                 {status === 'resting' ? (
-                    <div className="text-2xl font-mono font-bold text-cyan-400 glow-text-cyan">{formatTime(restTimer)}</div>
+                    <div className="text-3xl font-mono font-black text-cyan-400 tracking-tighter">{formatTime(restTimer)}</div>
                 ) : (
-                    <button onClick={startRest} className="w-12 h-12 bg-cyan-600 rounded-2xl flex items-center justify-center shadow-lg hover:bg-cyan-500 transition-all">
-                        <Clock size={20} className="text-white" />
+                    <button onClick={startRest} className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all ${isSpecialized ? 'bg-cyan-500 text-slate-950' : 'bg-white text-slate-950'}`}>
+                        <Clock size={24} />
                     </button>
                 )}
-                <button onClick={toggleExpand} className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center hover:bg-slate-700 transition-colors">
-                    {isExpanded ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                <button onClick={toggleExpand} className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+                    {isExpanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
                 </button>
             </div>
           </div>
 
-          {/* Expanded Content */}
           {isExpanded && (
-              <div className="mt-6 space-y-6 animate-fade-in relative">
+              <div className="mt-8 space-y-8 animate-fade-in">
                   
-                  {/* Holographic Avatar Container */}
-                  <div className="flex justify-center -my-4 relative z-0 opacity-80 scale-90">
-                      <div className="absolute inset-0 bg-cyan-500/10 blur-3xl rounded-full"></div>
-                      <BodyAvatar 
-                          {...avatarProps} 
-                          action={avatarAction} 
-                          hideBackground={true} 
-                          className="w-32 h-40"
-                      />
-                  </div>
-                  
-                  {/* Action Label */}
-                  <div className="text-center -mt-2 mb-2">
-                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] border border-white/10 px-2 py-1 rounded-full bg-black/20">
-                          Mode: {avatarAction.toUpperCase()}
-                      </span>
-                  </div>
+                  {isSpecialized ? (
+                      /* 專項模式專用：數據儀表板 (Dashboard) */
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="col-span-2 p-5 bg-cyan-950/20 rounded-[2.5rem] border border-cyan-500/20 flex items-center gap-5">
+                              <div className="w-20 h-20 bg-cyan-500/10 rounded-full flex items-center justify-center border border-cyan-500/20">
+                                  <Trophy size={32} className="text-cyan-400" />
+                              </div>
+                              <div className="flex-grow">
+                                  <span className="text-[9px] font-black text-cyan-500/50 uppercase">Primary Goal</span>
+                                  <p className="text-lg font-black text-white italic">{currentDay.focus}</p>
+                                  <div className="h-1 w-full bg-slate-900 mt-2 rounded-full overflow-hidden">
+                                      <div className="h-full bg-cyan-500 w-2/3 animate-pulse"></div>
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 text-center">
+                              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-1">Load Intensity</span>
+                              <span className="text-xl font-black text-white">HIGH</span>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 text-center">
+                              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-1">Energy Focus</span>
+                              <span className="text-xl font-black text-white">ANAEROBIC</span>
+                          </div>
+                      </div>
+                  ) : (
+                      /* 一般模式：模擬小人 */
+                      <div className="flex justify-center -my-4 relative">
+                          <div className="absolute inset-0 bg-white/5 blur-3xl rounded-full"></div>
+                          <BodyAvatar {...avatarProps} action={avatarAction} hideBackground={true} className="w-32 h-40" />
+                      </div>
+                  )}
 
-                  <div className="grid grid-cols-3 gap-3 relative z-10">
-                      <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('SETS')}</p>
-                          <p className="text-xl font-mono font-bold text-white">{currentExercise.sets}</p>
+                  <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-slate-950/40 p-4 rounded-[2rem] border border-white/5 text-center">
+                          <p className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">{t('SETS')}</p>
+                          <p className="text-2xl font-black text-white">{currentExercise.sets}</p>
                       </div>
-                      <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('REPS')}</p>
-                          <p className="text-xl font-mono font-bold text-white">{currentExercise.reps}</p>
+                      <div className="bg-slate-950/40 p-4 rounded-[2rem] border border-white/5 text-center">
+                          <p className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">{t('REPS')}</p>
+                          <p className="text-2xl font-black text-white">{currentExercise.reps}</p>
                       </div>
-                      <div className="bg-slate-950/40 p-3 rounded-2xl border border-white/5 text-center">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('REST')}</p>
-                          <p className="text-xl font-mono font-bold text-white">{currentExercise.rest}</p>
+                      <div className="bg-slate-950/40 p-4 rounded-[2rem] border border-white/5 text-center">
+                          <p className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">{t('REST')}</p>
+                          <p className="text-2xl font-black text-white">{currentExercise.rest}</p>
                       </div>
                   </div>
 
                   {currentExercise.notes && (
-                      <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 text-xs text-indigo-300 italic flex gap-2">
-                          <span className="not-italic">💡</span> {currentExercise.notes}
+                      <div className="p-5 bg-cyan-500/5 rounded-3xl border border-cyan-500/10 text-xs text-cyan-200 italic flex gap-3 items-start">
+                          <BrainCircuit size={16} className="text-cyan-500 flex-shrink-0" />
+                          <span>{currentExercise.notes}</span>
                       </div>
                   )}
 
                   <div className="flex justify-between items-center pt-2">
-                      <button onClick={endWorkout} className="flex items-center gap-2 text-red-400 text-xs font-bold uppercase hover:text-red-300">
-                          <X size={16} /> {t('PLAYER_END_WORKOUT')}
+                      <button onClick={endWorkout} className="flex items-center gap-2 text-red-500/60 text-[10px] font-black uppercase hover:text-red-500 transition-colors">
+                          <X size={14} /> {t('PLAYER_END_WORKOUT')}
                       </button>
-                      <div className="flex gap-2">
-                          <button onClick={() => status === 'paused' ? resumeWorkout() : pauseWorkout()} className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center">
-                              {status === 'paused' ? <Play size={20} /> : <Pause size={20} />}
+                      <div className="flex gap-3">
+                          <button onClick={() => status === 'paused' ? resumeWorkout() : pauseWorkout()} className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+                              {status === 'paused' ? <Play size={24} /> : <Pause size={24} />}
                           </button>
-                          <button onClick={nextExercise} className="px-6 h-12 bg-white text-slate-950 rounded-full font-extrabold text-sm uppercase flex items-center gap-2 hover:bg-slate-200 transition-colors">
-                              {t('PLAYER_NEXT_ACTION_BUTTON')} <SkipForward size={18} />
+                          <button onClick={nextExercise} className={`px-8 h-14 rounded-2xl font-black text-xs uppercase flex items-center gap-3 transition-all ${isSpecialized ? 'bg-cyan-500 text-slate-950' : 'bg-white text-slate-950'}`}>
+                              {t('PLAYER_NEXT_ACTION_BUTTON')} <SkipForward size={20} />
                           </button>
                       </div>
                   </div>

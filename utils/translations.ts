@@ -68,6 +68,10 @@ export const translations: { [key: string]: { en: string; zh: string } } = {
   TODAYS_NUTRITION_GOALS: { en: "Today's Nutrition Goals", zh: '今日營養目標' },
   TOTAL_CALORIES: { en: 'Total Calories', zh: '總熱量' },
 
+  // Specialized Dashboard
+  SPEC_DASH_TITLE: { en: 'Sport Protocol Active', zh: '專項運動協議已啟動' },
+  SPEC_ENERGY_TITLE: { en: 'Energy Systems Optimization', zh: '能量系統優化狀態' },
+
   // Manual Planner
   MANUAL_PLAN_TITLE: { en: 'Create Custom Plan', zh: '建立自定義課表' },
   PLAN_TITLE_LABEL: { en: 'Plan Title', zh: '計畫名稱' },
