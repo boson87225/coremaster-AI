@@ -19,6 +19,33 @@ const StatBar: React.FC<{ label: string, value: number, color: string }> = ({ la
     </div>
 );
 
+// --- 動態難度調節字典 ---
+// 定義動作的「退階 (Novice)」與「進階 (Elite)」變體
+const EXERCISE_MODIFIERS: Record<string, { novice?: string, elite?: string }> = {
+    "波比跳": { novice: "慢速波比 (不跳)", elite: "單腳波比跳" },
+    "深度跳": { novice: "深蹲跳", elite: "負重背心深度跳" },
+    "單腳助跑起跳": { novice: "原地垂直起跳", elite: "負重單腳起跳" },
+    "槓鈴深蹲": { novice: "高腳杯深蹲", elite: "暫停式槓鈴深蹲" },
+    "硬舉": { novice: "壺鈴硬舉", elite: "赤字硬舉 (Deficit)" },
+    "引體向上": { novice: "彈力帶輔助引體", elite: "負重引體向上" },
+    "懸垂舉腿": { novice: "地面抬腿", elite: "嚴格腳趾觸槓 (Toes-to-Bar)" },
+    "箱跳": { novice: "登階運動", elite: "連續高箱跳" },
+    "跳繩": { novice: "無繩跳繩", elite: "雙迴旋跳繩 (Double Unders)" },
+    "六角槓硬舉": { novice: "啞鈴硬舉", elite: "大重量六角槓硬舉" },
+    "農夫走路": { novice: "雙手啞鈴行走", elite: "單臂大重量行走" },
+    "土耳其起立": { novice: "分段式起立練習", elite: "大重量土耳其起立" },
+    "臥推": { novice: "伏地挺身", elite: "槓鈴臥推 (加鏈條/彈力帶)" },
+    "藥球砸牆": { novice: "輕藥球胸推", elite: "旋轉爆發砸牆" },
+    "戰繩衝刺": { novice: "戰繩雙手波浪", elite: "戰繩單手交替衝刺" },
+    "保加利亞蹲": { novice: "分腿蹲", elite: "負重保加利亞蹲" },
+    "北歐捲腿": { novice: "抗力球勾腿", elite: "負重北歐捲腿" },
+    "單腳RDL": { novice: "輔助單腳硬舉", elite: "雙壺鈴單腳硬舉" },
+    "帕洛夫推舉": { novice: "標準棒式", elite: "動態帕洛夫推舉" },
+    "划船機衝刺": { novice: "中速划船", elite: "全力衝刺划船" },
+    "倒立撐": { novice: "高腳倒立撐", elite: "缺口倒立撐" },
+    "抓舉技術": { novice: "PVC管動作練習", elite: "完整抓舉" },
+};
+
 export const SpecializedTrainingPage: React.FC = () => {
     const { setActiveWorkoutPlan } = useContext(PlanContext);
     const { t } = useTranslation();
@@ -32,12 +59,63 @@ export const SpecializedTrainingPage: React.FC = () => {
     // 獲取獨特運動清單 (12種)
     const sports = useMemo(() => Array.from(new Set(ALL_SPECIALIZED_PLANS.map(p => p.sport))), []);
     
-    // 根據運動與等級過濾計畫
-    const currentPlan = useMemo(() => 
-        ALL_SPECIALIZED_PLANS.find(p => p.sport === selectedSport && p.level === selectedLevel) || 
-        ALL_SPECIALIZED_PLANS.find(p => p.sport === selectedSport) || 
-        ALL_SPECIALIZED_PLANS[0]
-    , [selectedSport, selectedLevel]);
+    // --- 核心邏輯：動態生成分級計畫 ---
+    const currentPlan = useMemo(() => {
+        // 1. 找到該運動的基礎計畫 (預設通常是 Pro)
+        const basePlan = ALL_SPECIALIZED_PLANS.find(p => p.sport === selectedSport) || ALL_SPECIALIZED_PLANS[0];
+        
+        // 2. 深拷貝以避免修改原始常數
+        const plan: SpecializedPlan = JSON.parse(JSON.stringify(basePlan));
+        plan.level = selectedLevel;
+
+        // 3. 根據等級調整數值與內容
+        if (selectedLevel === 'Novice') {
+            // 新手調整
+            plan.stats.pwr = Math.max(20, plan.stats.pwr - 20);
+            plan.stats.agi = Math.max(20, plan.stats.agi - 10);
+            plan.stats.end = Math.max(20, plan.stats.end - 10);
+            plan.description = `(入門級調整) ${plan.description}`;
+            
+            plan.schedule.forEach(day => {
+                day.exercises.forEach(ex => {
+                    // 替換為較簡單動作
+                    if (EXERCISE_MODIFIERS[ex.name]?.novice) {
+                        ex.name = EXERCISE_MODIFIERS[ex.name].novice!;
+                    }
+                    // 降低組數與調整次數
+                    let details = ex.details;
+                    details = details.replace(/5x/g, '3x').replace(/4x/g, '3x').replace(/3x/g, '2x');
+                    details = details.replace(/MAX/g, '力竭前1下'); // 安全考量
+                    ex.details = details;
+                });
+            });
+            plan.precautions.unshift("動作質量優先於重量，如有不適請降階動作。");
+
+        } else if (selectedLevel === 'Elite') {
+            // 菁英調整
+            plan.stats.pwr = Math.min(100, plan.stats.pwr + 5);
+            plan.stats.agi = Math.min(100, plan.stats.agi + 5);
+            plan.stats.end = Math.min(100, plan.stats.end + 5);
+            plan.description = `(職業菁英版) ${plan.description}`;
+
+            plan.schedule.forEach(day => {
+                day.exercises.forEach(ex => {
+                    // 替換為進階動作
+                    if (EXERCISE_MODIFIERS[ex.name]?.elite) {
+                        ex.name = EXERCISE_MODIFIERS[ex.name].elite!;
+                    }
+                    // 增加組數
+                    let details = ex.details;
+                    details = details.replace(/3x/g, '4x').replace(/4x/g, '5x').replace(/5x/g, '6x');
+                    ex.details = details;
+                });
+            });
+            plan.precautions.unshift("此強度極高，請確保有防護員或教練在旁。");
+        }
+        // Pro 保持原樣 (除了 level 標籤)
+
+        return plan;
+    }, [selectedSport, selectedLevel]);
 
     const handleSetPlan = () => {
         setStatus('linking');
@@ -52,7 +130,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                         name: ex.name,
                         sets: parts[0]?.trim() || '3',
                         reps: parts[1]?.trim() || '12',
-                        rest: '60s',
+                        rest: selectedLevel === 'Elite' ? '45s' : selectedLevel === 'Novice' ? '90s' : '60s',
                         notes: `專項要點: ${currentPlan.keyPoints[0]}`,
                     };
                 }),
@@ -115,8 +193,9 @@ export const SpecializedTrainingPage: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                 <div className="absolute bottom-8 left-8 right-8">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="px-3 py-1 bg-cyan-500 text-slate-950 text-[8px] font-black uppercase rounded-full">{currentPlan.level}</span>
-                        <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Protocol Active</span>
+                        <span className={`px-3 py-1 text-slate-950 text-[8px] font-black uppercase rounded-full ${selectedLevel === 'Elite' ? 'bg-yellow-400' : selectedLevel === 'Novice' ? 'bg-emerald-400' : 'bg-cyan-500'}`}>
+                            {currentPlan.level} Protocol
+                        </span>
                     </div>
                     <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">{currentPlan.sport} 強化</h3>
                     <p className="text-[11px] text-slate-300 mt-2 line-clamp-2 italic font-medium leading-relaxed">{currentPlan.description}</p>
@@ -175,14 +254,14 @@ export const SpecializedTrainingPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <Zap size={14} className="text-yellow-400" />
-                        <span className="text-[9px] font-black text-white uppercase">強度: {currentPlan.level === 'Elite' ? '極限' : currentPlan.level === 'Pro' ? '高' : '中'}</span>
+                        <span className="text-[9px] font-black text-white uppercase">強度: {selectedLevel === 'Elite' ? '極限 (Max)' : selectedLevel === 'Pro' ? '高 (High)' : '適中 (Mod)'}</span>
                     </div>
                 </div>
             </div>
 
-            {/* 6. 完整動作預覽 */}
+            {/* 6. 完整動作預覽 (顯示已修正的動作名稱) */}
             <div className="space-y-4">
-                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">訓練序列清單</h4>
+                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-4">訓練序列清單 ({selectedLevel})</h4>
                 {currentPlan.schedule.map((day, idx) => (
                     <div key={idx} className="glass rounded-[2.5rem] border border-white/5 overflow-hidden transition-all hover:border-cyan-500/30 shadow-lg">
                         <div className="px-6 py-4 bg-white/5 flex justify-between items-center border-b border-white/5">
@@ -193,8 +272,8 @@ export const SpecializedTrainingPage: React.FC = () => {
                             {day.exercises.map((ex, eIdx) => (
                                 <div key={eIdx} className="flex justify-between items-center group text-[11px]">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-cyan-500 transition-colors"></div>
-                                        <span className="font-medium text-slate-300 group-hover:text-white">{ex.name}</span>
+                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors ${selectedLevel === 'Novice' ? 'bg-emerald-500' : 'bg-cyan-500'}`}></div>
+                                        <span className={`font-medium group-hover:text-white ${selectedLevel === 'Elite' ? 'text-yellow-100' : 'text-slate-300'}`}>{ex.name}</span>
                                     </div>
                                     <span className="font-mono font-black text-slate-500">{ex.details}</span>
                                 </div>
@@ -221,7 +300,7 @@ export const SpecializedTrainingPage: React.FC = () => {
                         <CheckCircle size={20} /> PROTOCOL LOADED
                     </span>
                 ) : (
-                    `採納 ${currentPlan.sport} 3日計畫`
+                    `採納 ${currentPlan.sport} (${selectedLevel}) 計畫`
                 )}
             </button>
 
