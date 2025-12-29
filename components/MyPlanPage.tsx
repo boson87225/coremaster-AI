@@ -1,7 +1,7 @@
 
 import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { PlanContext } from '../context/PlanContext';
-import { ClipboardList, Zap, Sparkles, UtensilsCrossed, Trash2, Edit, Activity, BrainCircuit, Target, Trophy, Info, Flame, ShieldCheck, RefreshCw, Loader2, List, Crosshair, Plus, ArrowRight, X, Scale, ShieldAlert } from './icons';
+import { ClipboardList, Zap, Sparkles, UtensilsCrossed, Trash2, Edit, Activity, BrainCircuit, Target, Trophy, Info, Flame, ShieldCheck, RefreshCw, Loader2, List, Crosshair, Plus, ArrowRight, X, Scale, ShieldAlert, Wind } from './icons';
 import type { Page, WorkoutPlan, SpecializedPlan, NutritionPlan } from '../types';
 import { useTranslation } from '../context/LanguageContext';
 import { WorkoutPlanCard } from './WorkoutPlanCard';
@@ -31,11 +31,98 @@ const getActionForDay = (focus: string, sportKey?: string): AvatarAction => {
     return 'idle';
 };
 
+// --- 三大能量系統教育模組 ---
+const EnergySystemsOverview: React.FC<{ primarySystems: string[] }> = ({ primarySystems }) => {
+    const { t } = useTranslation();
+
+    // 檢查系統是否為主要依賴 (支援中文與英文 key 的對應)
+    const isPrimary = (key: string) => {
+        return primarySystems.some(s => s.includes(key) || (key === 'ATP' && s.includes('ATP')) || (key === '糖解' && s.includes('糖')) || (key === '氧化' && s.includes('氧化')));
+    };
+
+    const systems = [
+        {
+            key: 'ATP',
+            name: t('ENERGY_SYSTEM_ATP_NAME'),
+            duration: t('ENERGY_SYSTEM_ATP_DURATION'),
+            example: t('ENERGY_SYSTEM_ATP_EXAMPLE'),
+            icon: <Zap size={24} />,
+            color: 'bg-red-500',
+            textColor: 'text-red-400',
+            borderColor: 'border-red-500/50',
+            gradient: 'from-red-600/20 to-orange-600/20'
+        },
+        {
+            key: '糖解',
+            name: t('ENERGY_SYSTEM_GLYCO_NAME'),
+            duration: t('ENERGY_SYSTEM_GLYCO_DURATION'),
+            example: t('ENERGY_SYSTEM_GLYCO_EXAMPLE'),
+            icon: <Flame size={24} />,
+            color: 'bg-yellow-500',
+            textColor: 'text-yellow-400',
+            borderColor: 'border-yellow-500/50',
+            gradient: 'from-yellow-600/20 to-amber-600/20'
+        },
+        {
+            key: '氧化',
+            name: t('ENERGY_SYSTEM_OXI_NAME'),
+            duration: t('ENERGY_SYSTEM_OXI_DURATION'),
+            example: t('ENERGY_SYSTEM_OXI_EXAMPLE'),
+            icon: <Wind size={24} />,
+            color: 'bg-cyan-500',
+            textColor: 'text-cyan-400',
+            borderColor: 'border-cyan-500/50',
+            gradient: 'from-cyan-600/20 to-blue-600/20'
+        }
+    ];
+
+    return (
+        <div className="space-y-4 animate-fade-in mt-4 border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('ENERGY_SYSTEM_TITLE')}</h3>
+            </div>
+            <p className="text-[10px] text-slate-500 italic">{t('ENERGY_SYSTEM_DESC')}</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {systems.map((sys) => {
+                    const active = isPrimary(sys.key);
+                    return (
+                        <div key={sys.key} className={`relative overflow-hidden rounded-2xl border transition-all duration-500 group ${active ? sys.borderColor + ' bg-gradient-to-br ' + sys.gradient : 'border-white/5 bg-slate-900/50 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`}>
+                            {active && (
+                                <div className={`absolute top-0 right-0 px-2 py-0.5 text-[8px] font-black text-slate-900 uppercase ${sys.color}`}>
+                                    {t('ENERGY_SYSTEM_PRIMARY')}
+                                </div>
+                            )}
+                            <div className="p-4 relative z-10 flex flex-col h-full justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-xl bg-slate-950/50 ${sys.textColor} shadow-lg`}>
+                                        {sys.icon}
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-xs font-black uppercase tracking-tight ${sys.textColor}`}>{sys.name}</h4>
+                                        <p className="text-[9px] font-mono text-slate-400">{sys.duration}</p>
+                                    </div>
+                                </div>
+                                <div className={`text-[10px] font-bold text-white bg-slate-950/30 p-2 rounded-lg border border-white/5 text-center group-hover:${sys.textColor} transition-colors`}>
+                                    {sys.example}
+                                </div>
+                            </div>
+                            {/* Decorative Background Glow */}
+                            <div className={`absolute -bottom-6 -right-6 w-20 h-20 rounded-full blur-xl ${sys.color} opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none`}></div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 const SpecializedDashboard: React.FC<{ sportKey: string, planTitle: string }> = ({ sportKey, planTitle }) => {
     const { t } = useTranslation();
     const plan = useMemo(() => ALL_SPECIALIZED_PLANS.find(p => p.key === sportKey), [sportKey]);
     const [activeTab, setActiveTab] = useState<'tech' | 'physio'>('tech');
     const [animateStats, setAnimateStats] = useState(false);
+    const [showEnergyInfo, setShowEnergyInfo] = useState(false); // 新增：控制能量系統顯示
 
     useEffect(() => {
         // Trigger animation after mount
@@ -100,7 +187,7 @@ const SpecializedDashboard: React.FC<{ sportKey: string, planTitle: string }> = 
                 </div>
 
                 {/* Tabs & Content */}
-                <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-1.5">
+                <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-1.5 transition-all">
                     <div className="flex p-1 bg-black/20 rounded-[2rem] mb-4">
                         <button 
                             onClick={() => setActiveTab('tech')}
@@ -154,6 +241,23 @@ const SpecializedDashboard: React.FC<{ sportKey: string, planTitle: string }> = 
                                 </div>
                             </div>
                         )}
+                    </div>
+                    
+                    {/* 能量系統開關 */}
+                    <div className="px-4 pb-4">
+                        <button 
+                            onClick={() => setShowEnergyInfo(!showEnergyInfo)}
+                            className="w-full py-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-2 group/btn"
+                        >
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest group-hover/btn:text-white transition-colors">
+                                {showEnergyInfo ? 'Hide Energy Systems' : 'View Energy Systems Analysis'}
+                            </span>
+                            <div className={`transition-transform duration-300 ${showEnergyInfo ? 'rotate-180' : ''}`}>
+                                <ArrowRight size={12} className="text-slate-500 rotate-90" />
+                            </div>
+                        </button>
+                        
+                        {showEnergyInfo && <EnergySystemsOverview primarySystems={plan.primarySystems} />}
                     </div>
                 </div>
              </div>
