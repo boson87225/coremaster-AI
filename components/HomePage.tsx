@@ -2,10 +2,109 @@
 import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { PlanContext } from '../context/PlanContext';
 import { getAiInsightTip, triggerKeySetup, getEffectiveApiKey } from '../services/geminiService';
-import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale, Download, Share2, HeartPulse, BrainCircuit, Bot, Settings, ClipboardList } from './icons';
+import { Sparkles, Loader2, RefreshCw, Dumbbell, Activity, User, History, Zap, UtensilsCrossed, ShieldAlert, ArrowRight, CheckCircle, Scale, Download, Share2, HeartPulse, BrainCircuit, Bot, Settings, ClipboardList, Flame, Wind, Trophy } from './icons';
 import { useTranslation } from '../context/LanguageContext';
 import { BodyAvatar } from './BodyAvatar';
+import { ALL_SPECIALIZED_PLANS } from '../constants';
 import type { Page } from '../types';
+
+// --- 新增：當前計畫總覽卡片 ---
+const ActivePlanOverview: React.FC<{ setPage: (page: Page) => void }> = ({ setPage }) => {
+    const { activeWorkoutPlan } = useContext(PlanContext);
+    
+    if (!activeWorkoutPlan) return null;
+
+    // 嘗試尋找對應的專項計畫資料以獲取圖片與詳細資訊
+    const specPlan = activeWorkoutPlan.sportKey 
+        ? ALL_SPECIALIZED_PLANS.find(p => p.key === activeWorkoutPlan.sportKey) 
+        : null;
+
+    return (
+        <div 
+            className="relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl group cursor-pointer transition-transform active:scale-[0.98]" 
+            onClick={() => setPage('my_plan')}
+        >
+            {/* Background Layer */}
+            <div className="absolute inset-0 bg-slate-900">
+               {specPlan ? (
+                   <img src={specPlan.imageUrl} className="w-full h-full object-cover opacity-40 group-hover:scale-105 group-hover:opacity-50 transition-all duration-1000 grayscale group-hover:grayscale-0" alt="Plan Bg" />
+               ) : (
+                   <div className="w-full h-full bg-gradient-to-br from-indigo-900 via-slate-900 to-black opacity-80"></div>
+               )}
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
+               
+               {/* Decorative Grid */}
+               <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            </div>
+
+            <div className="relative z-10 p-6 space-y-5">
+                {/* Top Badge Row */}
+                <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                        {specPlan ? (
+                            <span className="px-2.5 py-1 bg-cyan-500 text-slate-950 text-[9px] font-black uppercase rounded-lg tracking-widest shadow-lg shadow-cyan-500/20">
+                                {specPlan.sport} Protocol
+                            </span>
+                        ) : (
+                            <span className="px-2.5 py-1 bg-indigo-500 text-white text-[9px] font-black uppercase rounded-lg tracking-widest shadow-lg shadow-indigo-500/20">
+                                AI Generated
+                            </span>
+                        )}
+                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-300 uppercase tracking-widest border border-white/10 px-2.5 py-1 rounded-lg bg-black/40 backdrop-blur-md">
+                            <Activity size={10} className="text-emerald-400 animate-pulse" /> Active
+                        </span>
+                    </div>
+
+                    {/* Energy System Indicators (Only for Specialized Plans) */}
+                    {specPlan && (
+                        <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
+                            {specPlan.primarySystems.map(s => {
+                                if(s.includes('ATP')) return <div key={s} title="ATP-PCr (Explosive)" className="p-1 rounded-md bg-red-500/20 text-red-400"><Zap size={12} /></div>;
+                                if(s.includes('糖')) return <div key={s} title="Glycolytic (Anaerobic)" className="p-1 rounded-md bg-yellow-500/20 text-yellow-400"><Flame size={12} /></div>;
+                                if(s.includes('氧化')) return <div key={s} title="Oxidative (Aerobic)" className="p-1 rounded-md bg-cyan-500/20 text-cyan-400"><Wind size={12} /></div>;
+                                return null;
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                {/* Title & Info */}
+                <div>
+                    <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none drop-shadow-xl">
+                        {activeWorkoutPlan.planTitle}
+                    </h3>
+                    <p className="text-[10px] font-medium text-slate-300 mt-2 line-clamp-2 leading-relaxed opacity-80">
+                        {activeWorkoutPlan.planSummary}
+                    </p>
+                </div>
+
+                {/* Progress Bar & CTA */}
+                <div className="space-y-3">
+                    <div className="flex justify-between items-end text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        <span>Current Cycle Progress</span>
+                        <span>Day {activeWorkoutPlan.days[0].day} / {activeWorkoutPlan.days.length}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.5)] w-1/3"></div>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                    <div className="flex flex-col">
+                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Today's Focus</span>
+                        <span className="text-sm font-bold text-white flex items-center gap-2">
+                            <Trophy size={14} className="text-yellow-400" />
+                            {activeWorkoutPlan.days[0].focus}
+                        </span>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-white text-slate-950 flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-[-10deg] transition-all">
+                        <ArrowRight size={24} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const BodyStatusAnalysis: React.FC = () => {
     const { userProfile, weightLog, activeWorkoutPlan } = useContext(PlanContext);
@@ -112,42 +211,50 @@ export const HomePage: React.FC<{ setPage: (page: Page) => void; }> = ({ setPage
                     Core<span className="text-cyan-500">Master</span>
                 </h1>
                 <div className="flex gap-2">
-                    <button onClick={() => setPage('settings')} className="p-2 text-slate-500"><Settings size={18}/></button>
+                    <button onClick={() => setPage('settings')} className="p-2 text-slate-500 hover:text-white transition-colors"><Settings size={18}/></button>
                 </div>
             </header>
 
             {!activeWorkoutPlan ? (
                 <div className="glass p-10 rounded-[3rem] text-center space-y-8 border-t-2 border-cyan-500/30">
-                    <div className="w-20 h-20 bg-cyan-500 rounded-3xl flex items-center justify-center mx-auto"><Dumbbell className="text-white" size={32} /></div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{t('HOME_NO_PLAN_DESC')}</p>
-                    {/* 修改處：前往計畫選擇頁面 */}
-                    <button onClick={() => setPage('my_plan')} className="w-full py-4 bg-white text-slate-900 font-black rounded-2xl uppercase text-[10px] flex items-center justify-center gap-2">
+                    <div className="w-20 h-20 bg-cyan-500 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-cyan-500/20"><Dumbbell className="text-slate-950" size={32} /></div>
+                    <p className="text-xs text-slate-400 leading-relaxed font-medium">{t('HOME_NO_PLAN_DESC')}</p>
+                    <button onClick={() => setPage('my_plan')} className="w-full py-4 bg-white text-slate-900 font-black rounded-2xl uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-cyan-50 transition-colors shadow-lg">
                         <ClipboardList size={14} /> 選擇訓練計畫
                     </button>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
+                    {/* 1. 當前計畫總覽 (The Main Dashboard Widget) */}
+                    <ActivePlanOverview setPage={setPage} />
+
+                    {/* 2. 身體狀態 (Digital Twin) */}
                     <BodyStatusAnalysis />
+                    
+                    {/* 3. 數據快照 */}
                     <ProgressSnapshot />
                     
+                    {/* 4. 快速導航 */}
                     <div className="grid grid-cols-2 gap-3">
-                         <button onClick={() => setPage('workout')} className="bg-cyan-500/10 border border-cyan-500/20 p-4 rounded-2xl flex items-center gap-3">
-                            <Activity size={18} className="text-cyan-400" />
-                            <span className="text-[10px] font-black uppercase text-white">訓練模式</span>
+                         <button onClick={() => setPage('workout')} className="bg-slate-900/40 hover:bg-slate-800 border border-white/5 hover:border-cyan-500/30 p-4 rounded-2xl flex items-center gap-3 transition-all group">
+                            <div className="p-2 bg-cyan-500/10 rounded-xl text-cyan-400 group-hover:scale-110 transition-transform"><Activity size={18} /></div>
+                            <span className="text-[10px] font-black uppercase text-white tracking-widest">Training Mode</span>
                          </button>
-                         <button onClick={() => setPage('tracker')} className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl flex items-center gap-3">
-                            <History size={18} className="text-indigo-400" />
-                            <span className="text-[10px] font-black uppercase text-white">日誌歷史</span>
+                         <button onClick={() => setPage('tracker')} className="bg-slate-900/40 hover:bg-slate-800 border border-white/5 hover:border-indigo-500/30 p-4 rounded-2xl flex items-center gap-3 transition-all group">
+                            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:scale-110 transition-transform"><History size={18} /></div>
+                            <span className="text-[10px] font-black uppercase text-white tracking-widest">Logs & History</span>
                          </button>
                     </div>
 
-                    <div className="glass p-8 rounded-[2rem] border border-white/5 text-center flex flex-col items-center gap-4">
-                         <div className="w-12 h-12 bg-cyan-500/10 text-cyan-400 rounded-full flex items-center justify-center animate-bounce">
-                            <Bot size={24} />
+                    {/* 5. AI Coach Status */}
+                    <div className="glass p-6 rounded-[2rem] border border-white/5 flex items-center gap-4 cursor-pointer hover:border-cyan-500/20 transition-all">
+                         <div className="w-10 h-10 bg-cyan-500/10 text-cyan-400 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-cyan-500/10">
+                            <Bot size={20} />
                          </div>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            AI 教練已就緒，隨時點擊右下方浮球與我對話
-                         </p>
+                         <div>
+                             <p className="text-[10px] font-black text-white uppercase tracking-widest">AI Coach Online</p>
+                             <p className="text-[9px] text-slate-500">System Ready. Awaiting input.</p>
+                         </div>
                     </div>
                 </div>
             )}
